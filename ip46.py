@@ -36,19 +36,20 @@ def ClientTCP(ipv4):
     s.connect((ipv4, 4646))
     r = s.recv(10000)
     s.close()
-    print(r.decode())
+    return r.decode()
 
 def ServerUDP():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind(('0.0.0.0', 4646))
     while True:
         data, addr = s.recvfrom(1000)
-        s.sendto(get_ipv6().encode(), addr)
+        s.sendto(get_desc().encode(), addr)
         print(addr)
 
-def ClientUDP(ipv4):
+def ClientUDP(ipv4, timeout=10):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.settimeout(timeout)
     s.sendto(b'', (ipv4, 4646))
     r = s.recv(10000)
     s.close()
-    print(r.decode())
+    return r.decode()
