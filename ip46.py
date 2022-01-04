@@ -21,21 +21,34 @@ def get_desc():
         dv.append('\n'.join(tmp))
     return '\n\n'.join(dv)
 
-
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-def server():
+def ServerTCP():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(('0.0.0.0', 4646))
     s.listen(1)
     while True:
         s1, addr = s.accept()
-        s1.send(get_ipv6().encode())
+        s1.send(get_desc().encode())
         print(addr)
         s1.close()
 
-def client(ipv4):
+def ClientTCP(ipv4):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((ipv4, 4646))
+    r = s.recv(10000)
+    s.close()
+    print(r.decode())
+
+def ServerUDP():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.bind(('0.0.0.0', 4646))
+    while True:
+        data, addr = s.recvfrom(1000)
+        s.sendto(get_ipv6().encode(), addr)
+        print(addr)
+
+def ClientUDP(ipv4):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.sendto(b'', (ipv4, 4646))
     r = s.recv(10000)
     s.close()
     print(r.decode())
