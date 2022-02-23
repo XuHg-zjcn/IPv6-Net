@@ -1,2 +1,13 @@
+# python
 __pycache__
+
+# user data
 *.db
+
+# vim
+*.swp
+
+# emacs
+*~
+\#*#
+.#*
