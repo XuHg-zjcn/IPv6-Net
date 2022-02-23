@@ -1,6 +1,8 @@
+#!/usr/bin/python3
 import socket
 import os
 
+#TODO: add sign
 def get_desc():
     p = os.popen("ifconfig")
     devs = p.read().split('\n\n')
@@ -53,3 +55,7 @@ def ClientUDP(ipv4, timeout=10):
     r = s.recv(10000)
     s.close()
     return r.decode()
+
+
+if __name__ == '__main__':
+    ServerUDP()
