@@ -12,7 +12,7 @@
 
 # Author: Xu Ruijun 1687701765@qq.com
 
-EXECFILE=/home/xrj/program/internet/local_ddns/main.py
+EXECFILE=/home/xrj/program/internet/local_ddns/daemon.py
 PIDFILE=/var/run/ipv6netd.pid
 
 case "$1" in
