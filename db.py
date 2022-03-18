@@ -19,6 +19,9 @@ class HostTable(SqlTable):
     ("update_count", "INTEGER"),  #更新次数
     ("test_period", "REAL"),      #测试周期
     ]
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.last_mono = {}
 
     def add_dev(self, name, ipv4, period=60.0):
         self.insert({'name':name,
@@ -31,26 +34,27 @@ class HostTable(SqlTable):
                      'test_period':period})
         self.commit()
 
-    def conn_on(self, did):
-        now = time.time()
-        self.update_conds({'id':did}, {'conn_count':('+=', 1), 'conn_last':now})
-        self.commit()
+    def disconn(self, did):
+        if did in self.last_tmono:
+            self.last_mono.pop(did)
 
     def inc_time(self, did):
         now = time.time()
-        sec, last = self.get_conds_onlyone({'id':did}, fields=('online_sec', 'conn_last'))
-        if last is not None:
-            sec += now-last
+        tmono = time.monotonic()
+        if did not in self.last_mono:
+            self.last_mono[did] = tmono
+            self.update_conds({'id':did}, {'conn_count':('+=', 1), 'conn_last':now})
+            return
         else:
-            sec = 0
-        self.update_conds({'id':did}, {'online_sec':sec, 'conn_last':now})
+            delta = tmono - self.last_mono[did]
+            self.last_mono[did] = tmono
+            self.update_conds({'id':did}, {'online_sec':('+=', delta), 'conn_last':now})
         self.commit()
 
     def update_ipv6(self, did, ipv6):
         now = time.time()
-        self.update_conds({'id':did}, {'conn_count':('+=', 1), 'ipv6':ipv6, 'update_last':now})
+        self.update_conds({'id':did}, {'update_count':('+=', 1), 'ipv6':ipv6, 'update_last':now})
         self.commit()
 
 conn = sqlite3.connect('data.db')
 htab = HostTable(conn)
-
