@@ -1,15 +1,35 @@
-from collections import Iterable
+#!/usr/bin/python3
+'''
+   Copyright 2021-2022 Xu Ruijun
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+'''
+
+from collections.abc import Iterable
 from numbers import Number
 
-import numpy as np
-
-
-def number_np2py(x):
-    if isinstance(x, np.integer):
-        x = int(x)
-    elif isinstance(x, np.floating):
-        x = float(x)
-    return x
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    def number_np2py(x):
+        return x
+else:
+    def number_np2py(x):
+        if isinstance(x, np.integer):
+            x = int(x)
+        elif isinstance(x, np.floating):
+            x = float(x)
+        return x
 
 
 def onlyone_process(iterable,
@@ -31,16 +51,16 @@ def onlyone_process(iterable,
 
 
 class SqlTable:
+    """
+    Examples
+    --------
+    table_name: 'tab'
+    name2type_dict: [('name','TEXT'), ('num','REAL')]
+    """
     name2dtype = [('example_int', 'INT'), ('example_text', 'TEXT')]
     table_name = 'table_name'
 
     def __init__(self, conn, commit_each=False):
-        """
-        Examples
-        --------
-        table_name: 'tab'
-        name2type_dict: [('name','TEXT'), ('num','REAL')]
-        """
         self.conn = conn
         self.commit_each = commit_each
         self.create_table(commit=True)
