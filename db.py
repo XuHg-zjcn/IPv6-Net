@@ -31,8 +31,8 @@ class HostTable(SqlTable):
                      'update_count':0,
                      'update_last':datetime.datetime.now(),
                      'update_count':0,
-                     'test_period':period})
-        self.commit()
+                     'test_period':period},
+                    commit=True)
 
     def disconn(self, did):
         if did in self.last_tmono:
@@ -43,18 +43,16 @@ class HostTable(SqlTable):
         tmono = time.monotonic()
         if did not in self.last_mono:
             self.last_mono[did] = tmono
-            self.update_conds({'id':did}, {'conn_count':('+=', 1), 'conn_last':now})
+            self.update_conds({'id':did}, {'conn_count':('+=', 1), 'conn_last':now}, commit=True)
             return
         else:
             delta = tmono - self.last_mono[did]
             self.last_mono[did] = tmono
-            self.update_conds({'id':did}, {'online_sec':('+=', delta), 'conn_last':now})
-        self.commit()
+            self.update_conds({'id':did}, {'online_sec':('+=', delta), 'conn_last':now}, commit=True)
 
     def update_ipv6(self, did, ipv6):
         now = time.time()
-        self.update_conds({'id':did}, {'update_count':('+=', 1), 'ipv6':ipv6, 'update_last':now})
-        self.commit()
+        self.update_conds({'id':did}, {'update_count':('+=', 1), 'ipv6':ipv6, 'update_last':now}, commit=True)
 
 conn = sqlite3.connect('data.db')
 htab = HostTable(conn)
