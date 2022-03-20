@@ -25,6 +25,7 @@ from python_hosts import Hosts, HostsEntry
 
 from db import htab
 from ip46 import ClientUDP
+import conf
 
 
 class Host(Thread):
@@ -69,7 +70,7 @@ class Host(Thread):
 
 class Syncer:
     def __init__(self):
-        self.hosts = Hosts(path='hosts_test')
+        self.hosts = Hosts(path=conf.hosts_file)
         self.queue = Queue()
         self.hlst = []
 
@@ -87,6 +88,7 @@ class Syncer:
                 htab.inc_time(did)
                 print(f'{hname} : keep')
             else:
+                hname += conf.domain_suffix
                 ipv6 = state
                 htab.update_ipv6(did, ipv6)
                 self.hosts.remove_all_matching('ipv6', hname)
