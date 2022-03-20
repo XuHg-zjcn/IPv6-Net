@@ -38,14 +38,15 @@ class Host(Thread):
 
     def update(self):
         resp = None
-        for i in range(10):
+        for i in range(2):
             try:
                 resp = ClientUDP(self.ipv4)
             except Exception:
                 pass
-            finally:
+            else:
                 break
         else:
+            self.queue.put((self.hname, self.did, False))
             return
         ipv6 = self.ipv6
         for line in resp.split('\n'):
@@ -56,7 +57,7 @@ class Host(Thread):
             self.queue.put((self.hname, self.did, ipv6))
             self.ipv6 = ipv6
         else:
-            self.queue.put((self.hname, self.did,))
+            self.queue.put((self.hname, self.did, True))
 
     def run(self):
         self.update()
@@ -78,14 +79,16 @@ class Syncer:
             self.hlst.append(h)
             h.start()
         while True:
-            ele = self.queue.get()
-            if len(ele) == 2:
-                htab.inc_time(ele[1])
-                hname = ele[0]
+            hname, did, state = self.queue.get()
+            if state == False:
+                print(f'{hname} : faild')
+                htab.disconn(did)
+            elif state == True:
+                htab.inc_time(did)
                 print(f'{hname} : keep')
             else:
-                htab.update_ipv6(*ele[1:])
-                hname, did, ipv6 = ele
+                ipv6 = state
+                htab.update_ipv6(did, ipv6)
                 self.hosts.remove_all_matching('ipv6', hname)
                 target = HostsEntry(entry_type='ipv6', address=ipv6, names=[hname])
                 self.hosts.add([target])

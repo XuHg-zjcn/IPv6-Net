@@ -52,7 +52,7 @@ class HostTable(SqlTable):
                     commit=True)
 
     def disconn(self, did):
-        if did in self.last_tmono:
+        if did in self.last_mono:
             self.last_mono.pop(did)
 
     def inc_time(self, did):
