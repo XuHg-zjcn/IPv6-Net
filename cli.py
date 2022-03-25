@@ -58,7 +58,13 @@ def cli():
         res = htab.get_conds_execute(fields=fields)
         res = map(lambda x:(*x[:3], int(x[3]),
                             ts2str(x[4]), int(x[5])), res)
-        tab = PrettyTable(fields)
+        tab = PrettyTable()
+        tab.add_column('name', [], align='l')
+        tab.add_column('ipv4', [], align='l')
+        tab.add_column('ipv6', [], align='l')
+        tab.add_column('online_sec', [], align='r')
+        tab.add_column('conn_last', [], align='l')
+        tab.add_column('conn_count', [], align='r')
         tab.add_rows(res)
         print(tab)
     elif s == '3':
