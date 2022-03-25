@@ -28,14 +28,14 @@
 #                    to it
 ### END INIT INFO
 
-
-EXECFILE=/home/xrj/program/internet/local_ddns/daemon.py
+WORKDIR=/home/xrj/program/internet/local_ddns
+EXECFILE=$WORKDIR/daemon.py
 PIDFILE=/var/run/ipv6netd.pid
 
 case "$1" in
     start)
         start-stop-daemon --start --pidfile $PIDFILE --make-pidfile \
-                          --exec $EXECFILE --background
+                          --chdir $WORKDIR --exec $EXECFILE --background
         ;;
     stop)
         start-stop-daemon --stop --pidfile $PIDFILE \
