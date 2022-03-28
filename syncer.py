@@ -18,81 +18,79 @@
 ########################################################################
 import random
 import time
+import struct
+import socket
+import ipaddress
+import sqlite3
+from enum import Enum
 
 from threading import Thread
 from queue import Queue
 from python_hosts import Hosts, HostsEntry
 
-from db import htab
+from db import HostTable
 from ip46 import ClientUDP
 import conf
+from peer import PeerDict
 
 
-class Host(Thread):
-    def __init__(self, table, did, queue):
-        self.table = table
-        self.did = did
-        self.hname, self.period, self.ipv4, self.ipv6 = \
-            table.get_conds_onlyone({'id':did}, fields=('name', 'test_period', 'ipv4', 'ipv6'))
-        self.queue = queue
-        Thread.__init__(self)
+htab = None
+peerdict = PeerDict()
+soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+soc.bind(('0.0.0.0', 4646))
 
-    def update(self):
-        resp = None
-        for i in range(2):
-            try:
-                resp = ClientUDP(self.ipv4)
-            except Exception:
-                pass
-            else:
-                break
-        else:
-            self.queue.put((self.hname, self.did, False))
-            return
-        ipv6 = self.ipv6
-        for line in resp.split('\n'):
-            words = line.split()
-            if len(words) == 2 and words[0] == 'inet6':
-                ipv6 = words[1]
-        if ipv6 != self.ipv6:
-            self.queue.put((self.hname, self.did, ipv6))
-            self.ipv6 = ipv6
-        else:
-            self.queue.put((self.hname, self.did, True))
+
+class Commd(Enum):  # 
+    POA = 0x03      # idnefer(4B), version(4B), ipv6(16B)
+
+
+class SyncTask(Thread):
+    def __init__(self, p, init_set=None):
+        super().__init__()
+        self.data = struct.pack('>BII', Commd.POA.value, int(p.ipv4), p.version) + \
+                int(p.ipv6).to_bytes(16, 'big')
+        self.peer = p
+        if init_set is None:
+            init_set = set()
+        self.knows = init_set  #这些节点已经有数据了
 
     def run(self):
-        self.update()
-        time.sleep(self.period * random.random())
-        while True:
-            self.update()
-            time.sleep(self.period)
+        while len(self.knows) < len(peerdict.d):
+            p4 = random.sample(peerdict.d.keys(), 1)[0]
+            if p4 in self.knows:
+                continue
+            soc.sendto(self.data, (str(p4), 4646))
+            self.knows.add(p4)
 
 
-class Syncer:
+class Syncer(Thread):
     def __init__(self):
+        super().__init__()
         self.hosts = Hosts(path=conf.hosts_file)
         self.queue = Queue()
         self.hlst = []
 
-    def start_all(self):
-        for did in htab.get_conds_execute(fields=('id')):
-            h = Host(htab, did, self.queue)
-            self.hlst.append(h)
-            h.start()
+    def init_pull(self):
+        #程序启动后，与已知节点通信，获取更新
+        #不触发SyncTask
+        pass
+
+    def run(self):
+        global htab
+        conn = sqlite3.connect('data.db')
+        htab = HostTable(conn)
+        peerdict.load_db(htab)
         while True:
-            hname, did, state = self.queue.get()
-            if state == False:
-                print(f'{hname} : faild')
-                htab.disconn(did)
-            elif state == True:
-                htab.inc_time(did)
-                print(f'{hname} : keep')
-            else:
-                hname += conf.domain_suffix
-                ipv6 = state
-                htab.update_ipv6(did, ipv6)
-                self.hosts.remove_all_matching('ipv6', hname)
-                target = HostsEntry(entry_type='ipv6', address=ipv6, names=[hname])
-                self.hosts.add([target])
-                self.hosts.write()
-                print(f'{hname} : {ipv6}')
+            data, addr = soc.recvfrom(1000)
+            if data[0] == Commd.POA.value:
+                ipv4int, version = struct.unpack('>II', data[1:9])
+                p = peerdict.find_v4(ipv4int)
+                if version > p.version:
+                    ipv6int = int.from_bytes(data[9:25], 'big')
+                    ipv6 = ipaddress.IPv6Address(ipv6int)
+                    p.ipv6 = ipv6
+                    p.version = version
+                    htab.update_ipv6(p.did, ipaddress.IPv6Address(ipv6int), version)
+                    SyncTask(p).start()
+
+#TODO: start SyncTask when update local addresss

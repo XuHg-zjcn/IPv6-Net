@@ -18,8 +18,15 @@
 ########################################################################
 import datetime
 import sys
+import sqlite3
+
 from prettytable import PrettyTable
-from db import htab
+
+from db import HostTable
+
+
+conn = sqlite3.connect('data.db')
+htab = HostTable(conn)
 
 version_str = '''
 IPv6Net v0.1.0-3

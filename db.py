@@ -35,6 +35,8 @@ class HostTable(SqlTable):
     ("update_last", "REAL"),      #最后一次更新地址的时间戳
     ("update_count", "INTEGER"),  #更新次数
     ("test_period", "REAL"),      #测试周期
+    ("version", "INTEGER"),       #版本
+    ("level", "INTEGER")          #等级
     ]
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -48,7 +50,9 @@ class HostTable(SqlTable):
                      'update_count':0,
                      'update_last':datetime.datetime.now(),
                      'update_count':0,
-                     'test_period':period},
+                     'test_period':period,
+                     'version':0,
+                     'level':0},
                     commit=True)
 
     def disconn(self, did):
@@ -67,9 +71,11 @@ class HostTable(SqlTable):
             self.last_mono[did] = tmono
             self.update_conds({'id':did}, {'online_sec':('+=', delta), 'conn_last':now}, commit=True)
 
-    def update_ipv6(self, did, ipv6):
+    def update_ipv6(self, did, ipv6, version):
         now = time.time()
-        self.update_conds({'id':did}, {'update_count':('+=', 1), 'ipv6':ipv6, 'update_last':now}, commit=True)
-
-conn = sqlite3.connect('data.db')
-htab = HostTable(conn)
+        self.update_conds({'id':did},
+                          {'update_count':('+=', 1),
+                           'ipv6':str(ipv6),
+                           'update_last':now,
+                           'version':version},
+                          commit=True)

@@ -40,17 +40,7 @@ def get_desc():
         dv.append('\n'.join(tmp))
     return '\n\n'.join(dv)
 
-def ServerUDP():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.bind(('0.0.0.0', 4646))
-    while True:
-        data, addr = s.recvfrom(1000)
-        s.sendto(get_desc().encode(), addr)
-        print(addr)
-
-def ClientUDP(ipv4, timeout=10):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.settimeout(timeout)
+def ClientUDP(s, ipv4, timeout=10):
     s.sendto(b'', (ipv4, 4646))
     r = s.recv(10000)
     s.close()
