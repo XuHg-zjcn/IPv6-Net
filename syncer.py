@@ -29,7 +29,7 @@ from queue import Queue
 from python_hosts import Hosts, HostsEntry
 
 from db import HostTable
-from ip46 import ClientUDP
+import ip46
 import conf
 from peer import PeerDict
 
@@ -40,7 +40,9 @@ soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 soc.bind(('0.0.0.0', 4646))
 
 
-class Commd(Enum):  # 
+class Commd(Enum):  #
+    GTN = 0x00      # None
+    GTA = 0x01      # None
     POA = 0x03      # idnefer(4B), version(4B), ipv6(16B)
 
 
@@ -82,7 +84,11 @@ class Syncer(Thread):
         peerdict.load_db(htab)
         while True:
             data, addr = soc.recvfrom(1000)
-            if data[0] == Commd.POA.value:
+            if data[0] == Commd.GTN.value:
+                soc.sendto(conf.client_name.encode(), addr)
+            elif data[0] == Commd.GTA.value:
+                soc.sendto(ip46.get_local_ipv6(), addr)
+            elif data[0] == Commd.POA.value:
                 ipv4int, version = struct.unpack('>II', data[1:9])
                 p = peerdict.find_v4(ipv4int)
                 if version > p.version:

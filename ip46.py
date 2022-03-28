@@ -16,14 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ########################################################################
+import ipaddress
 import socket
 import os
 
 #TODO: add sign
-def get_desc():
+def get_local_ipv6():
     p = os.popen("ifconfig")
     devs = p.read().split('\n\n')
-    dv = []
+    ret = None
     for dev in devs:
         if not dev:
             break
@@ -35,17 +36,16 @@ def get_desc():
         for line in lines[1:]:
             w = line.split()
             tp, addr = w[:2]
-            if tp in {'inet', 'ether'} or '<global>' in line:
-                tmp.append(f'{tp} {addr}')
-        dv.append('\n'.join(tmp))
-    return '\n\n'.join(dv)
+            if tp == 'inet6' and '<global>' in line:
+                ret = addr
+    if ret is None:
+        return b''
+    else:
+        return int(ipaddress.IPv6Address(ret)).to_bytes(16, 'big')
 
 def ClientUDP(s, ipv4, timeout=10):
-    s.sendto(b'', (ipv4, 4646))
+    s.sendto(b'\x01', (ipv4, 4646))
     r = s.recv(10000)
     s.close()
-    return r.decode()
+    return r
 
-
-if __name__ == '__main__':
-    ServerUDP()
