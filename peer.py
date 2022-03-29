@@ -19,8 +19,13 @@
 import ipaddress
 import struct
 import socket
+import queue
+import threading
+import sqlite3
 
-global htab
+from db import HostTable
+
+q = None
 
 class Peer:
     def __init__(self, name, did, version, ipv4, ipv6=None):
@@ -38,19 +43,39 @@ class Peer:
     def __bytes__(self):
         return int(self.ipv6).to_bytes(16, 'big')
 
+    def update_ipv6(self, ipv6, version):
+        self.ipv6 = ipv6
+        self.version = version
+        q.put((self.did, ipv6, version))
 
-class PeerDict:
+
+class PeerDict(threading.Thread):
     def __init__(self):
+        super().__init__()
         self.d = {}
+        self.q = queue.Queue()
 
     def add(self, peer):
         self.d[peer.ipv4] = peer
 
-    def load_db(self, htab):
-        res = htab.get_conds_execute(fields=['name', 'id', 'version', 'ipv4', 'ipv6'])
+    def load_db(self):
+        res = self.htab.get_conds_execute(fields=['name', 'id', 'version', 'ipv4', 'ipv6'])
         for fields in res:
             p = Peer(*fields)
             self.add(p)
 
     def find_v4(self, v4):
         return self.d[ipaddress.IPv4Address(v4)]
+
+    def run(self):
+        conn = sqlite3.connect('data.db')
+        self.htab = HostTable(conn)
+        self.load_db()
+        while True:
+            p = self.q.get()
+            self.htab.update_ipv6(*p)
+
+
+peerdict = PeerDict()
+q = peerdict.q
+peerdict.start()

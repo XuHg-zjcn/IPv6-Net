@@ -31,11 +31,9 @@ from python_hosts import Hosts, HostsEntry
 from db import HostTable
 import ip46
 import conf
-from peer import PeerDict
+from peer import peerdict
 
 
-htab = None
-peerdict = PeerDict()
 soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 soc.bind(('0.0.0.0', 4646))
 
@@ -78,10 +76,6 @@ class Syncer(Thread):
         pass
 
     def run(self):
-        global htab
-        conn = sqlite3.connect('data.db')
-        htab = HostTable(conn)
-        peerdict.load_db(htab)
         while True:
             data, addr = soc.recvfrom(1000)
             if data[0] == Commd.GTN.value:
@@ -96,7 +90,7 @@ class Syncer(Thread):
                     ipv6 = ipaddress.IPv6Address(ipv6int)
                     p.ipv6 = ipv6
                     p.version = version
-                    htab.update_ipv6(p.did, ipaddress.IPv6Address(ipv6int), version)
+                    p.update_ipv6(ipaddress.IPv6Address(ipv6int), version)
                     SyncTask(p).start()
 
 #TODO: start SyncTask when update local addresss
