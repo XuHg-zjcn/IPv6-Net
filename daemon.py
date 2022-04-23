@@ -19,9 +19,9 @@
 import threading
 
 import ip46
-import syncer
+import server
 
 
 if __name__ == '__main__':
-   Syncer = syncer.Syncer()
-   Syncer.start()
+   Server = server.Server()
+   Server.start()
