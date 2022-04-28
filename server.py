@@ -43,16 +43,29 @@ class Server(threading.Thread):
         while True:
             data, addr = soc.recvfrom(1000)
             if data[0] == Commd.GTN.value:
-                soc.sendto(conf.client_name.encode(), addr)
+                pack = bytes([Commd.PTN.value])
+                pack = pack + conf.client_name.encode()
+                soc.sendto(pack, addr)
+                print('GTN')
             elif data[0] == Commd.GTA.value:
-                soc.sendto(ip46.get_local_ipv6(), addr)
+                # TODO: 从数据库中读取IPv6和版本，判断IPv6是否变化，变化则更新版本
+                version = 1
+                pack = struct.pack('>BI', Commd.PTA.value, version)
+                pack = pack + ip46.get_local_ipv6()
+                soc.sendto(pack, addr)
+                print('GTA')
+            elif data[0] == Commd.PTA.value:
+                ipv4str = addr[0]
+                version = int.from_bytes(data[1:5], 'big')
+                ipv6int = int.from_bytes(data[5:21], 'big')
+                p = peerdict.find_v4(ipv4str)
+                p.update_ipv6(ipaddress.IPv6Address(ipv6int), version)
+                print('PTA', ipv4str)
             elif data[0] == Commd.POA.value:
                 ipv4int, version = struct.unpack('>II', data[1:9])
                 p = peerdict.find_v4(ipv4int)
                 if version > p.version:
                     ipv6int = int.from_bytes(data[9:25], 'big')
-                    ipv6 = ipaddress.IPv6Address(ipv6int)
-                    p.ipv6 = ipv6
-                    p.version = version
                     p.update_ipv6(ipaddress.IPv6Address(ipv6int), version)
                     #SyncTask(p).start()
+                print('POA')

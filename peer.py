@@ -28,7 +28,7 @@ from db import HostTable
 q = None
 
 class Peer:
-    def __init__(self, name, did, version, ipv4, ipv6=None):
+    def __init__(self, name, did, version, ipv4, ipv6=None, period=60.0):
         self.name = name
         self.did = did
         self.version = version
@@ -39,6 +39,7 @@ class Peer:
         self.ipv4 = ipv4
         self.ipv6 = ipv6
         self.addr_tuple = (str(ipv4), 4646)
+        self.period = period
 
     def __bytes__(self):
         return int(self.ipv6).to_bytes(16, 'big')
@@ -59,7 +60,7 @@ class PeerDict(threading.Thread):
         self.d[peer.ipv4] = peer
 
     def load_db(self):
-        res = self.htab.get_conds_execute(fields=['name', 'id', 'version', 'ipv4', 'ipv6'])
+        res = self.htab.get_conds_execute(fields=['name', 'id', 'version', 'ipv4', 'ipv6', 'test_period'])
         for fields in res:
             p = Peer(*fields)
             self.add(p)

@@ -20,8 +20,11 @@ import threading
 
 import ip46
 import server
+import tester
 
 
 if __name__ == '__main__':
    Server = server.Server()
    Server.start()
+   Tester = tester.Tester()
+   Tester.start()
