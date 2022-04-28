@@ -28,8 +28,8 @@ class Tester(threading.Thread):
         self.l = []
 
     def load_peer(self, pdx):
-        for k, v in pdx.items():
-            self.l.append(Test(time.monotonic()+v.period, k))
+        for p in pdx.values():
+            self.l.append(Test(time.monotonic()+p.period, p))
         self.l.sort(key=lambda x:x.t)
 
     def test(self, peer):
