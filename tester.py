@@ -2,6 +2,7 @@
 import time
 import bisect
 import threading
+import random
 
 from peer import peerdict
 from server import soc
@@ -29,14 +30,19 @@ class Tester(threading.Thread):
 
     def load_peer(self, pdx):
         for p in pdx.values():
-            self.l.append(Test(time.monotonic()+p.period, p))
+            self.l.append(Test(time.monotonic() + p.period*random.random(), p))
         self.l.sort(key=lambda x:x.t)
 
     def test(self, peer):
         soc.sendto(bytes([Commd.GTA.value]), peer.addr_tuple)
 
+    def test_all(self):
+        for T in self.l:
+            self.test(T.peer)
+
     def run(self):
         self.load_peer(peerdict.d)
+        self.test_all()
         while True:
             test = self.l.pop(0)
             dt = test.t - time.monotonic()
