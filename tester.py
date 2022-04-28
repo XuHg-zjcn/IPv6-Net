@@ -2,10 +2,10 @@
 import time
 import bisect
 import threading
-import socket
 
 from peer import peerdict
 from server import soc
+from protol import Commd
 
 class Test:
     def __init__(self, t, peer):

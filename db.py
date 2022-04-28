@@ -18,10 +18,7 @@
 ########################################################################
 import time
 import datetime
-import sqlite3
 from sqltable import SqlTable
-import os
-import re
 
 class HostTable(SqlTable):
     table_name = 'host_table'

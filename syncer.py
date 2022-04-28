@@ -17,16 +17,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ########################################################################
 import random
-import time
 import struct
 
 from threading import Thread
 
-from db import HostTable
-import ip46
-import conf
 from peer import peerdict
 from server import soc
+from protol import Commd
 
 
 class SyncTask(Thread):
