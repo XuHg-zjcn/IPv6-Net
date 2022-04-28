@@ -12,8 +12,8 @@
 
 # 安装方法
 1. 运行daemon.py文件
-2. 手动修改data.db
-3. 添加开机启动
+1. 手动修改data.db
+1. 添加开机启动
    ```bash
    sudo cp files/ipv6netd /etc/init.d  #复制启动脚本
    sudo update-rc.d ipv6netd defaults  #更新自动启动
@@ -21,10 +21,11 @@
    下次开机就能自动启动了
 
 # 更新计划
+1. `ip monitor address`
 1. 命令行修改数据库
-2. 实现数据库同步
-3. 数字签名，优先选用Ed25519
-4. 加密通信
+1. 实现数据库同步
+1. 数字签名，优先选用Ed25519
+1. 加密通信
 
 # 版本历史
 ## v0.1.0: (2022.3.19)
