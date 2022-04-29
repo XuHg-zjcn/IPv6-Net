@@ -25,7 +25,8 @@ import sqlite3
 
 from db import HostTable
 
-q = None
+
+q = queue.Queue()
 
 class Peer:
     def __init__(self, name, did, version, ipv4, ipv6=None, period=60.0):
@@ -54,7 +55,6 @@ class PeerDict(threading.Thread):
     def __init__(self):
         super().__init__()
         self.d = {}
-        self.q = queue.Queue()
 
     def add(self, peer):
         self.d[peer.ipv4] = peer
@@ -73,10 +73,9 @@ class PeerDict(threading.Thread):
         self.htab = HostTable(conn)
         self.load_db()
         while True:
-            p = self.q.get()
+            p = q.get()
             self.htab.update_ipv6(*p)
 
 
 peerdict = PeerDict()
-q = peerdict.q
 peerdict.start()
