@@ -20,9 +20,7 @@ import socket
 import struct
 import threading
 import ipaddress
-
 from queue import Queue
-from python_hosts import Hosts, HostsEntry
 
 import ip46
 import conf
@@ -36,7 +34,6 @@ soc.bind(('0.0.0.0', 4646))
 class Server(threading.Thread):
     def __init__(self):
         super().__init__()
-        self.hosts = Hosts(path=conf.hosts_file)
         self.queue = Queue()
         self.hlst = []
 

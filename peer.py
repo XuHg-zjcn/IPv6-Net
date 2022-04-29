@@ -23,9 +23,13 @@ import queue
 import threading
 import sqlite3
 
+from python_hosts import Hosts, HostsEntry
+
+import conf
 from db import HostTable
 
 
+hosts = Hosts(path=conf.hosts_file)
 q = queue.Queue()
 
 class Peer:
@@ -48,6 +52,11 @@ class Peer:
     def update_ipv6(self, ipv6, version):
         self.ipv6 = ipv6
         self.version = version
+        hname = self.name + conf.domain_suffix
+        hosts.remove_all_matching('ipv6', hname)
+        target = HostsEntry(entry_type='ipv6', address=str(ipv6), names=[hname])
+        hosts.add([target])
+        hosts.write()
         q.put((self.did, ipv6, version))
 
 
