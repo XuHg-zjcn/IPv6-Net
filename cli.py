@@ -22,10 +22,11 @@ import sqlite3
 
 from prettytable import PrettyTable
 
+import conf
 from db import HostTable
 
 
-conn = sqlite3.connect('data.db')
+conn = sqlite3.connect(conf.db_path)
 htab = HostTable(conn)
 
 version_str = '''

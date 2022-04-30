@@ -78,7 +78,8 @@ class PeerDict(threading.Thread):
         return self.d[ipaddress.IPv4Address(v4)]
 
     def run(self):
-        conn = sqlite3.connect('data.db')
+        #sqlite只支持单线程操作,所以把所有sqlite操作都放到这里
+        conn = sqlite3.connect(conf.db_path)
         self.htab = HostTable(conn)
         self.load_db()
         while True:
