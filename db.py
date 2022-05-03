@@ -24,6 +24,7 @@ class HostTable(SqlTable):
     table_name = 'host_table'
     name2dtype = [
     ("name", "TEXT"),             #设备名称
+    ("pubkey", "BLOB"),           #Ed25519
     ("ipv4", "TEXT"),             #IPv4
     ("ipv6", "TEXT"),             #IPv6
     ("online_sec", "REAL"),       #在线时间(秒)
@@ -39,8 +40,9 @@ class HostTable(SqlTable):
         super().__init__(*args, **kwargs)
         self.last_mono = {}
 
-    def add_dev(self, name, ipv4, period=60.0):
+    def add_dev(self, name, ipv4, pubkey=None, period=60.0):
         self.insert({'name':name,
+                     'pubkey':pubkey,
                      'ipv4':ipv4,
                      'online_sec':0.0,
                      'conn_count':0,

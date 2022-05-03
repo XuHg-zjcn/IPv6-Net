@@ -21,6 +21,7 @@ import sys
 import sqlite3
 
 from prettytable import PrettyTable
+import ed25519
 
 import conf
 from db import HostTable
@@ -54,12 +55,17 @@ def cli():
     if s == '1':
         name = input('请输入设备名称:')
         ipv4 = input('请输入局域网IPv4:')
+        pubkey = input('请输入公钥base64:')
         period = input('请输入测试周期(单位秒,默认60秒):')
         try:
             period = float(period)
         except Exception:
             period = 60.0
-        htab.add_dev(name, ipv4, period)
+        if len(pubkey) == 43:
+            pubkey = ed25519.from_ascii(pubkey)
+        else:
+            pubkey = None
+        htab.add_dev(name, ipv4, pubkey, period)
     elif s == '2':
         fields = ['name', 'ipv4', 'ipv6', 'online_sec',
                   'conn_last', 'conn_count']
@@ -75,6 +81,7 @@ def cli():
         tab.add_column('conn_count', [], align='r')
         tab.add_rows(res)
         print(tab)
+        print('本机公钥', conf.vk.to_ascii(encoding='base64').decode())
     elif s == '3':
         name = input('请输入要修改的设备名称:')
         if not isExists(name):

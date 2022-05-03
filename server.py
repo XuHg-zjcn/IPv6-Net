@@ -32,38 +32,62 @@ soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 soc.bind(('0.0.0.0', 4646))
 
 class Server(threading.Thread):
-    def __init__(self):
+    def __init__(self, p):
         super().__init__()
         self.queue = Queue()
         self.hlst = []
+        self.p = p
 
     def run(self):
         while True:
             data, addr = soc.recvfrom(1000)
-            if data[0] == Commd.GTN.value:
-                pack = bytes([Commd.PTN.value])
-                pack = pack + conf.client_name.encode()
-                soc.sendto(pack, addr)
-                print('GTN')
-            elif data[0] == Commd.GTA.value:
-                # TODO: 从数据库中读取IPv6和版本，判断IPv6是否变化，变化则更新版本
-                version = 1
-                pack = struct.pack('>BI', Commd.PTA.value, version)
-                pack = pack + ip46.get_local_ipv6()
-                soc.sendto(pack, addr)
-                print('GTA')
-            elif data[0] == Commd.PTA.value:
-                ipv4str = addr[0]
-                version = int.from_bytes(data[1:5], 'big')
-                ipv6int = int.from_bytes(data[5:21], 'big')
-                p = peerdict.find_v4(ipv4str)
-                p.update_ipv6(ipaddress.IPv6Address(ipv6int), version)
-                print('PTA', ipv4str)
-            elif data[0] == Commd.POA.value:
-                ipv4int, version = struct.unpack('>II', data[1:9])
-                p = peerdict.find_v4(ipv4int)
-                if version > p.version:
-                    ipv6int = int.from_bytes(data[9:25], 'big')
-                    p.update_ipv6(ipaddress.IPv6Address(ipv6int), version)
-                    #SyncTask(p).start()
-                print('POA')
+            i = 0
+            res = bytearray()
+            p = self.p
+            while i < len(data):
+                if data[i] == Commd.TG.value:
+                    i += 1
+                    p = peerdict.find_pubkey(data[i:i+32])
+                    if p is None:
+                        res.append(Commd.NF.value)
+                        break
+                elif data[i] == Commd.GN.value:
+                    i += 1
+                    res.append(Commd.PN.value)
+                    res.extend(struct.pack('>H', len(conf.client_name)))
+                    res.extend(conf.client_name.encode())
+                elif data[i] == Commd.PN.value:
+                    i += 1
+                    i += int.from_bytes(data[i:i+2], 'big')
+                    i += 64
+                    if p == self.p:
+                        continue
+                elif data[i] == Commd.GA.value:
+                    i += 1
+                    res.append(Commd.PA.value)
+                    res.extend(struct.pack('>Q', 1))
+                    #TODO: 处理无法获取IPv6地址情况
+                    res.extend(ip46.get_local_ipv6())
+                    res.extend(conf.sk.sign(bytes(res[-25:])))
+                elif data[i] == Commd.PA.value:
+                    if p != self.p:
+                        p.put_addr(data)
+                    i += 89
+                elif data[i] == Commd.GK.value:
+                    i += 1
+                    res.append(Commd.PK.value)
+                    res.extend(p.pubkey)
+                elif data[i] == Commd.PK.value:
+                    if p != self.p:
+                        p.put_pubkey(data[i:i+33])
+                    i += 33
+                elif data[i] == Commd.GI.value:
+                    i += 1
+                    res.append(Commd.PI.value)
+                    #TODO: 添加支持
+                    res.extend(struct.pack('>QH'), 0, 0)
+                    res.extend(bytes(64))
+                else:
+                    i += 1
+            if len(res) > 0:
+                soc.sendto(bytes(res), addr)

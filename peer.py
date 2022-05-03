@@ -22,6 +22,7 @@ import socket
 import queue
 import threading
 import sqlite3
+import ed25519
 
 from python_hosts import Hosts, HostsEntry
 
@@ -33,8 +34,11 @@ hosts = Hosts(path=conf.hosts_file)
 q = queue.Queue()
 
 class Peer:
-    def __init__(self, name, did, version, ipv4, ipv6=None, period=60.0):
+    def __init__(self, name, pubkey, did, version, ipv4, ipv6=None, period=60.0):
         self.name = name
+        if pubkey is not None:
+            pubkey = ed25519.VerifyingKey(pubkey)
+        self.pubkey = pubkey
         self.did = did
         self.version = version
         if ipv6 is not None:
@@ -59,6 +63,29 @@ class Peer:
         hosts.write()
         q.put((self.did, ipv6, version))
 
+    def put_addr(self, data):
+        assert data[0] == Commd.PA.value
+        ver = int.from_bytes(data[1:9], 'big')
+        ipv6 = int.from_bytes(data[9:25], 'big')
+        sign = data[25:89]
+        try:
+            p.pubkey.verify(sign, data[:25])
+        except ed25519.BadSignatureError:
+            print('sign error', p.name)
+            return None
+        else:
+            if ver > self.version:
+                p.update_ipv6(ipv6, ver)
+                return True
+            else:
+                return False
+
+    def put_pubkey(self, data):
+        assert len(data) == 33
+        assert data[0] == Commd.PK.value
+        #self.pubkey = ed25519.VerifyingKey(data[1:])
+        #TODO: 待实现
+
 
 class PeerDict(threading.Thread):
     def __init__(self):
@@ -66,16 +93,19 @@ class PeerDict(threading.Thread):
         self.d = {}
 
     def add(self, peer):
-        self.d[peer.ipv4] = peer
+        self.d[peer.pubkey.to_bytes()] = peer
 
     def load_db(self):
-        res = self.htab.get_conds_execute(fields=['name', 'id', 'version', 'ipv4', 'ipv6', 'test_period'])
+        res = self.htab.get_conds_execute(fields=['name', 'pubkey', 'id', 'version', 'ipv4', 'ipv6', 'test_period'])
         for fields in res:
             p = Peer(*fields)
             self.add(p)
 
-    def find_v4(self, v4):
-        return self.d[ipaddress.IPv4Address(v4)]
+    def find_pubkey(self, pubkey):
+        if pubkey in self.d:
+            return self.d[pubkey]
+        else:
+            return None
 
     def run(self):
         #sqlite只支持单线程操作,所以把所有sqlite操作都放到这里

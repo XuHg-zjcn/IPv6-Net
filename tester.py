@@ -34,13 +34,19 @@ class Tester(threading.Thread):
         self.l.sort(key=lambda x:x.t)
 
     def test(self, peer):
-        soc.sendto(bytes([Commd.GTA.value]), peer.addr_tuple)
+        s = bytearray()
+        if peer.pubkey is None:
+            s.append(Commd.GK.value)
+        s.append(Commd.GA.value)
+        soc.sendto(bytes(s), peer.addr_tuple)
+        print('test', peer.name)
 
     def test_all(self):
         for T in self.l:
             self.test(T.peer)
 
     def run(self):
+        time.sleep(1)  # 等待数据库加载完成
         self.load_peer(peerdict.d)
         self.test_all()
         while True:
