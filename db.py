@@ -27,6 +27,7 @@ class HostTable(SqlTable):
     ("pubkey", "BLOB"),           #Ed25519
     ("ipv4", "TEXT"),             #IPv4
     ("ipv6", "TEXT"),             #IPv6
+    ("addr_sign", "BLOB"),        #签名
     ("online_sec", "REAL"),       #在线时间(秒)
     ("conn_count", "INTEGER"),    #连接次数
     ("conn_last", "REAL"),        #最后一次连接的时间戳
@@ -70,11 +71,12 @@ class HostTable(SqlTable):
             self.last_mono[did] = tmono
             self.update_conds({'id':did}, {'online_sec':('+=', delta), 'conn_last':now}, commit=True)
 
-    def update_ipv6(self, did, ipv6, version):
+    def update_ipv6(self, did, ipv6, version, sign=None):
         now = time.time()
         self.update_conds({'id':did},
                           {'update_count':('+=', 1),
                            'ipv6':str(ipv6),
                            'update_last':now,
-                           'version':version},
+                           'version':version,
+                           'addr_sign':sign},
                           commit=True)

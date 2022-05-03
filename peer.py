@@ -28,13 +28,14 @@ from python_hosts import Hosts, HostsEntry
 
 import conf
 from db import HostTable
+from protol import Commd
 
 
 hosts = Hosts(path=conf.hosts_file)
 q = queue.Queue()
 
 class Peer:
-    def __init__(self, name, pubkey, did, version, ipv4, ipv6=None, period=60.0):
+    def __init__(self, name, pubkey, did, version, ipv4, ipv6=None, addr_sign=None, period=60.0):
         self.name = name
         if pubkey is not None:
             pubkey = ed25519.VerifyingKey(pubkey)
@@ -47,13 +48,14 @@ class Peer:
             ipv4 = ipaddress.IPv4Address(ipv4)
         self.ipv4 = ipv4
         self.ipv6 = ipv6
+        self.addr_sign = addr_sign or bytes(64)
         self.addr_tuple = (str(ipv4), 4646)
         self.period = period
 
     def __bytes__(self):
         return int(self.ipv6).to_bytes(16, 'big')
 
-    def update_ipv6(self, ipv6, version):
+    def update_ipv6(self, ipv6, version, sign):
         self.ipv6 = ipv6
         self.version = version
         hname = self.name + conf.domain_suffix
@@ -61,7 +63,7 @@ class Peer:
         target = HostsEntry(entry_type='ipv6', address=str(ipv6), names=[hname])
         hosts.add([target])
         hosts.write()
-        q.put((self.did, ipv6, version))
+        q.put((self.did, ipv6, version, sign))
 
     def put_addr(self, data):
         assert data[0] == Commd.PA.value
@@ -69,13 +71,13 @@ class Peer:
         ipv6 = int.from_bytes(data[9:25], 'big')
         sign = data[25:89]
         try:
-            p.pubkey.verify(sign, data[:25])
+            self.pubkey.verify(sign, data[:25])
         except ed25519.BadSignatureError:
-            print('sign error', p.name)
+            print('sign error', self.name)
             return None
         else:
             if ver > self.version:
-                p.update_ipv6(ipv6, ver)
+                self.update_ipv6(ipv6, ver, sign)
                 return True
             else:
                 return False
@@ -96,7 +98,7 @@ class PeerDict(threading.Thread):
         self.d[peer.pubkey.to_bytes()] = peer
 
     def load_db(self):
-        res = self.htab.get_conds_execute(fields=['name', 'pubkey', 'id', 'version', 'ipv4', 'ipv6', 'test_period'])
+        res = self.htab.get_conds_execute(fields=['name', 'pubkey', 'id', 'version', 'ipv4', 'ipv6', 'addr_sign', 'test_period'])
         for fields in res:
             p = Peer(*fields)
             self.add(p)

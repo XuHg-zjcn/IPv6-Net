@@ -65,10 +65,17 @@ class Server(threading.Thread):
                 elif data[i] == Commd.GA.value:
                     i += 1
                     res.append(Commd.PA.value)
-                    res.extend(struct.pack('>Q', 1))
+                    res.extend(struct.pack('>Q', p.version))
                     #TODO: 处理无法获取IPv6地址情况
-                    res.extend(ip46.get_local_ipv6())
-                    res.extend(conf.sk.sign(bytes(res[-25:])))
+                    if p == self.p:
+                        res.extend(ip46.get_local_ipv6())
+                        res.extend(conf.sk.sign(bytes(res[-25:])))
+                    else:
+                        res.extend(p.ipv6.packed)
+                        if p.addr_sign:
+                            res.extend(p.addr_sign)
+                        else:
+                            res.extend(bytes(64))
                 elif data[i] == Commd.PA.value:
                     if p != self.p:
                         p.put_addr(data)
