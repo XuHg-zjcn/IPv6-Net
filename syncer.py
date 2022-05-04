@@ -37,8 +37,8 @@ class SyncTask(Thread):
         self.knows = init_set  #这些节点已经有数据了
 
     def run(self):
-        while len(self.knows) < len(peerdict.d):
-            p4 = random.sample(peerdict.d.keys(), 1)[0]
+        while len(self.knows) < len(peerdict.d4):
+            p4 = random.sample(peerdict.d4.keys(), 1)[0]
             if p4 in self.knows:
                 continue
             soc.sendto(self.data, (str(p4), 4646))

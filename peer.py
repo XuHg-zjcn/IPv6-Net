@@ -69,6 +69,7 @@ class Peer:
         assert data[0] == Commd.PA.value
         ver = int.from_bytes(data[1:9], 'big')
         ipv6 = int.from_bytes(data[9:25], 'big')
+        ipv6 = ipaddress.IPv6Address(ipv6)
         sign = data[25:89]
         try:
             self.pubkey.verify(sign, data[:25])
@@ -92,22 +93,20 @@ class Peer:
 class PeerDict(threading.Thread):
     def __init__(self):
         super().__init__()
-        self.d = {}
+        self.dk = {}
+        self.d6 = {}
+        self.d4 = {}
 
     def add(self, peer):
-        self.d[peer.pubkey.to_bytes()] = peer
+        self.dk[peer.pubkey.to_bytes()] = peer
+        self.d6[peer.ipv6] = peer
+        self.d4[peer.ipv4] = peer
 
     def load_db(self):
         res = self.htab.get_conds_execute(fields=['name', 'pubkey', 'id', 'version', 'ipv4', 'ipv6', 'addr_sign', 'test_period'])
         for fields in res:
             p = Peer(*fields)
             self.add(p)
-
-    def find_pubkey(self, pubkey):
-        if pubkey in self.d:
-            return self.d[pubkey]
-        else:
-            return None
 
     def run(self):
         #sqlite只支持单线程操作,所以把所有sqlite操作都放到这里

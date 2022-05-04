@@ -47,7 +47,7 @@ class Tester(threading.Thread):
 
     def run(self):
         time.sleep(1)  # 等待数据库加载完成
-        self.load_peer(peerdict.d)
+        self.load_peer(peerdict.dk)
         self.test_all()
         while True:
             test = self.l.pop(0)
