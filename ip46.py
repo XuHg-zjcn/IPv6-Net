@@ -18,30 +18,24 @@
 ########################################################################
 import ipaddress
 import socket
-import os
+import netifaces
 
-#TODO: add sign
 def get_local_ipv6():
-    p = os.popen("ifconfig")
-    devs = p.read().split('\n\n')
-    ret = None
-    for dev in devs:
-        if not dev:
-            break
-        lines = dev.split('\n')
-        line0 = lines[0].split()
-        if "LOOPBACK" in line0[1]:
+    last = None
+    for iface in netifaces.interfaces():
+        ifa = netifaces.ifaddresses(iface)
+        ipv6 = ifa.get(netifaces.AF_INET6)
+        if not ipv6:
             continue
-        tmp = [line0[0]]
-        for line in lines[1:]:
-            w = line.split()
-            tp, addr = w[:2]
-            if tp == 'inet6' and '<global>' in line:
-                ret = addr
-    if ret is None:
-        return b''
-    else:
-        return int(ipaddress.IPv6Address(ret)).to_bytes(16, 'big')
+        for i in ipv6[::-1]:
+            try:
+                last = ipaddress.IPv6Address(i['addr'])
+            except ipaddress.AddressValueError:
+                pass
+            else:
+                break
+    return last
+
 
 def ClientUDP(s, ipv4, timeout=10):
     s.sendto(b'\x01', (ipv4, 4646))

@@ -77,7 +77,7 @@ class Server(threading.Thread):
                     res.extend(struct.pack('>Q', pg.version))
                     #TODO: 处理无法获取IPv6地址情况
                     if pg == self.p:
-                        res.extend(ip46.get_local_ipv6())
+                        res.extend(ip46.get_local_ipv6().packed)
                         res.extend(conf.sk.sign(bytes(res[-25:])))
                     else:
                         res.extend(pg.ipv6.packed)

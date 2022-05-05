@@ -52,9 +52,6 @@ class Peer:
         self.addr_tuple = (str(ipv4), 4646)
         self.period = period
 
-    def __bytes__(self):
-        return int(self.ipv6).to_bytes(16, 'big')
-
     def update_ipv6(self, ipv6, version, sign):
         self.ipv6 = ipv6
         self.version = version
@@ -68,8 +65,7 @@ class Peer:
     def put_addr(self, data):
         assert data[0] == Commd.PA.value
         ver = int.from_bytes(data[1:9], 'big')
-        ipv6 = int.from_bytes(data[9:25], 'big')
-        ipv6 = ipaddress.IPv6Address(ipv6)
+        ipv6 = ipaddress.IPv6Address(data[9:25])
         sign = data[25:89]
         try:
             self.pubkey.verify(sign, data[:25])
