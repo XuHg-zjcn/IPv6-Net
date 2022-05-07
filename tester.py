@@ -54,6 +54,9 @@ class Tester(threading.Thread):
         self.test_all()
         while True:
             test = self.l.pop(0)
+            if not test.peer.last_test_recv:
+                test.peer.disconn()
+            test.peer.last_test_recv = False
             dt = test.t - time.monotonic()
             if dt > 0:
                 time.sleep(dt)

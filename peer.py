@@ -52,6 +52,7 @@ class Peer:
         self.addr_sign = addr_sign or bytes(64)
         self.addr_tuple = (str(ipv4), 4646)
         self.period = period
+        self.last_test_recv = False
 
     def update_ipv6(self, ipv6, version, sign):
         self.ipv6 = ipv6
@@ -62,7 +63,14 @@ class Peer:
         target = HostsEntry(entry_type='ipv6', address=str(ipv6), names=[hname])
         hosts.add([target])
         hosts.write()
-        q.put((self.did, ipv6, version, sign))
+        q.put(('update_ipv6', self.did, ipv6, version, sign))
+
+    def inc_time(self):
+        self.last_test_recv = True
+        q.put(('inc_time', self.did))
+
+    def disconn(self):
+        q.put(('disconn', self.did))
 
     def put_addr(self, data):
         assert data[0] == Commd.PA.value
@@ -75,6 +83,7 @@ class Peer:
             print('sign error', self.name)
             return None
         else:
+            self.inc_time()
             if ver > self.version:
                 self.update_ipv6(ipv6, ver, sign)
                 return True
@@ -99,6 +108,7 @@ class LocalPeer(Peer):
             tmp.extend(ipv6.packed)
             sign = conf.sk.sign(bytes(tmp))
             self.update_ipv6(ipv6, ver, sign)
+        self.inc_time()
         #TODO: 起动SyncTask
 
     def put_addr(self, data):
@@ -140,7 +150,7 @@ class PeerDict(threading.Thread):
         self.load_db()
         while True:
             p = q.get()
-            self.htab.update_ipv6(*p)
+            getattr(self.htab, p[0])(*p[1:])
 
 
 peerdict = PeerDict()
