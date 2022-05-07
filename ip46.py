@@ -20,21 +20,34 @@ import ipaddress
 import socket
 import netifaces
 
-def get_local_ipv6():
-    last = None
+
+LANNets = [
+    ipaddress.IPv4Network('10.0.0.0/8'),
+    ipaddress.IPv4Network('172.16.0.0/12'),
+    ipaddress.IPv4Network('192.168.0.0/16'),
+    ]
+
+def get_local_addr():
+    last4 = None
+    last6 = None
     for iface in netifaces.interfaces():
         ifa = netifaces.ifaddresses(iface)
+        ipv4 = ifa.get(netifaces.AF_INET)
         ipv6 = ifa.get(netifaces.AF_INET6)
-        if not ipv6:
-            continue
-        for i in ipv6[::-1]:
-            try:
-                last = ipaddress.IPv6Address(i['addr'])
-            except ipaddress.AddressValueError:
-                pass
-            else:
-                break
-    return last
+        if ipv4:
+            for i in ipv4[::-1]:
+                addr = ipaddress.IPv4Address(i['addr'])
+                if any(addr in net for net in LANNets):
+                    last4 = addr
+        if ipv6:
+            for i in ipv6[::-1]:
+                addr = i['addr']
+                if '%' in addr:
+                    continue
+                tmp = ipaddress.IPv6Address(addr)
+                if tmp.is_global:
+                    last6 = tmp
+    return last4, last6
 
 
 def ClientUDP(s, ipv4, timeout=10):

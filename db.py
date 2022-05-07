@@ -18,7 +18,11 @@
 ########################################################################
 import time
 import datetime
+
 from sqltable import SqlTable
+import conf
+import ip46
+
 
 class HostTable(SqlTable):
     table_name = 'host_table'
@@ -39,6 +43,21 @@ class HostTable(SqlTable):
     ]
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        ipv4, ipv6 = ip46.get_local_addr()
+        if self.get_conds_onlyone({'id':0}, def0=0, def2=2) == 0:
+            self.insert({'id':0,
+                         'name':conf.client_name,
+                         'pubkey':conf.vk.to_bytes(),
+                         'ipv4':str(ipv4),
+                         'online_sec':0.0,
+                         'conn_count':0,
+                         'update_count':0,
+                         'update_last':datetime.datetime.now(),
+                         'update_count':0,
+                         'test_period':60.0,
+                         'version':0,
+                         'level':0},
+                        commit=True)
         self.last_mono = {}
 
     def add_dev(self, name, ipv4, pubkey=None, period=60.0):

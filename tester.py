@@ -4,7 +4,7 @@ import bisect
 import threading
 import random
 
-from peer import peerdict
+from peer import peerdict, LocalPeer
 from server import soc
 from protol import Commd
 
@@ -34,12 +34,15 @@ class Tester(threading.Thread):
         self.l.sort(key=lambda x:x.t)
 
     def test(self, peer):
-        s = bytearray()
-        if peer.pubkey is None:
-            s.append(Commd.GK.value)
-        s.append(Commd.GA.value)
-        soc.sendto(bytes(s), peer.addr_tuple)
-        print('test', peer.name)
+        if isinstance(peer, LocalPeer):
+            peer.check_update_addr()
+        else:
+            s = bytearray()
+            if peer.pubkey is None:
+                s.append(Commd.GK.value)
+            s.append(Commd.GA.value)
+            soc.sendto(bytes(s), peer.addr_tuple)
+            print('test', peer.name)
 
     def test_all(self):
         for T in self.l:

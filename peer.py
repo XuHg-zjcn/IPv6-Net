@@ -26,6 +26,7 @@ import ed25519
 
 from python_hosts import Hosts, HostsEntry
 
+import ip46
 import conf
 from db import HostTable
 from protol import Commd
@@ -55,6 +56,7 @@ class Peer:
     def update_ipv6(self, ipv6, version, sign):
         self.ipv6 = ipv6
         self.version = version
+        self.addr_sign = sign
         hname = self.name + conf.domain_suffix
         hosts.remove_all_matching('ipv6', hname)
         target = HostsEntry(entry_type='ipv6', address=str(ipv6), names=[hname])
@@ -86,12 +88,35 @@ class Peer:
         #TODO: 待实现
 
 
+class LocalPeer(Peer):
+    def check_update_addr(self):
+        ipv4, ipv6 = ip46.get_local_addr()
+        if ipv6 != self.ipv6:
+            ver = self.version + 1
+            tmp = bytearray()
+            tmp.append(Commd.PA.value)
+            tmp.extend(ver.to_bytes(8, 'big'))
+            tmp.extend(ipv6.packed)
+            sign = conf.sk.sign(bytes(tmp))
+            self.update_ipv6(ipv6, ver, sign)
+        #TODO: 起动SyncTask
+
+    def put_addr(self, data):
+        # 禁止用数据更新本机地址
+        pass
+
+    def put_pubkey(self, data):
+        # 禁止用数据更新本机公钥
+        pass
+
+
 class PeerDict(threading.Thread):
     def __init__(self):
         super().__init__()
         self.dk = {}
         self.d6 = {}
         self.d4 = {}
+        self.local = None
 
     def add(self, peer):
         self.dk[peer.pubkey.to_bytes()] = peer
@@ -101,7 +126,11 @@ class PeerDict(threading.Thread):
     def load_db(self):
         res = self.htab.get_conds_execute(fields=['name', 'pubkey', 'id', 'version', 'ipv4', 'ipv6', 'addr_sign', 'test_period'])
         for fields in res:
-            p = Peer(*fields)
+            if fields[2] == 0:
+                p = LocalPeer(*fields)
+                self.local = p
+            else:
+                p = Peer(*fields)
             self.add(p)
 
     def run(self):

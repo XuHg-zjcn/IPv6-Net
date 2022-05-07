@@ -26,15 +26,7 @@ import peer
 
 
 if __name__ == '__main__':
-   # TODO: 将本机节点放入数据库,id=0
-   p = peer.Peer(name=conf.client_name,
-                 pubkey=conf.vk.vk_s,
-                 did=None,
-                 version=0,
-                 ipv4=None,
-                 ipv6=ip46.get_local_ipv6(),
-                 period=None)
-   Server = server.Server(p)
+   Server = server.Server()
    Server.start()
    Tester = tester.Tester()
    Tester.start()
