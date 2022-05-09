@@ -26,6 +26,7 @@ LANNets = [
     ipaddress.IPv4Network('192.168.0.0/16'),
     ]
 
+
 def get_local_addr():
     last4 = None
     last6 = None
@@ -56,4 +57,3 @@ def ClientUDP(s, ipv4, timeout=10):
     r = s.recv(10000)
     s.close()
     return r
-

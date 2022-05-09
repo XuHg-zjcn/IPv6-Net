@@ -24,9 +24,9 @@ import peer
 
 
 if __name__ == '__main__':
-   sock6 = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
-   sock6.bind(('::', 4646))
-   Server6 = server.Server(sock6, peer.peerdict.find_v46)
-   Server6.start()
-   Tester = tester.Tester(sock6)
-   Tester.start()
+    sock6 = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+    sock6.bind(('::', 4646))
+    Server6 = server.Server(sock6, peer.peerdict.find_v46)
+    Server6.start()
+    Tester = tester.Tester(sock6)
+    Tester.start()

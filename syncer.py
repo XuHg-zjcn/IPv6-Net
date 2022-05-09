@@ -28,12 +28,13 @@ from protol import Commd
 class SyncTask(Thread):
     def __init__(self, p, init_set=None):
         super().__init__()
-        self.data = struct.pack('>BII', Commd.POA.value, int(p.ipv4), p.version) + \
-                int(p.ipv6).to_bytes(16, 'big')
+        self.data = struct.pack('>BII',
+                                Commd.POA.value, int(p.ipv4), p.version) + \
+            int(p.ipv6).to_bytes(16, 'big')
         self.peer = p
         if init_set is None:
             init_set = set()
-        self.knows = init_set  #这些节点已经有数据了
+        self.knows = init_set  # 这些节点已经有数据了
 
     def run(self):
         while len(self.knows) < len(peerdict.d4):
@@ -43,4 +44,4 @@ class SyncTask(Thread):
             soc.sendto(self.data, (str(p4), 4646))
             self.knows.add(p4)
 
-#TODO: start SyncTask when update local addresss
+# TODO: start SyncTask when update local addresss

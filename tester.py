@@ -7,6 +7,7 @@ import random
 from peer import peerdict, LocalPeer
 from protol import Commd
 
+
 class Test:
     def __init__(self, t, peer):
         self.t = t
@@ -25,13 +26,14 @@ class Test:
 class Tester(threading.Thread):
     def __init__(self, sock):
         super().__init__()
-        self.l = []
+        self.tasks = []
         self.sock = sock
 
     def load_peer(self, pdx):
         for p in pdx.values():
-            self.l.append(Test(time.monotonic() + p.period*random.random(), p))
-        self.l.sort(key=lambda x:x.t)
+            test = Test(time.monotonic() + p.period*random.random(), p)
+            self.tasks.append(test)
+        self.tasks.sort(key=lambda x: x.t)
 
     def test(self, peer):
         if isinstance(peer, LocalPeer):
@@ -45,7 +47,7 @@ class Tester(threading.Thread):
             print('test', peer.name)
 
     def test_all(self):
-        for T in self.l:
+        for T in self.tasks:
             self.test(T.peer)
 
     def run(self):
@@ -53,14 +55,14 @@ class Tester(threading.Thread):
         self.load_peer(peerdict.dk)
         self.test_all()
         while True:
-            test = self.l.pop(0)
+            test = self.tasks.pop(0)
             if not test.peer.last_test_recv:
                 test.peer.disconn()
             test.peer.last_test_recv = False
             dt = test.t - time.monotonic()
             if dt > 0:
                 time.sleep(dt)
-                bisect.insort(self.l, test.next1())
+                bisect.insort(self.tasks, test.next1())
             else:
-                bisect.insort(self.l, test.next2())
+                bisect.insort(self.tasks, test.next2())
             self.test(test.peer)

@@ -38,6 +38,7 @@ Copyright (C) 2022  Xu Ruijun
 在法律范围内没有任何担保。
 '''
 
+
 def ts2str(x):
     if x is None:
         return ''
@@ -45,10 +46,12 @@ def ts2str(x):
         x = datetime.datetime.fromtimestamp(x)
         return x.strftime("%Y-%m-%d %H:%M:%S")
 
+
 def isExists(name):
-    res = htab.get_conds_execute(cond_dict={'name':name})
+    res = htab.get_conds_execute(cond_dict={'name': name})
     res = list(res)
     return len(res) != 0
+
 
 def cli():
     s = input('请选择[1.添加 2.查看 3.修改 4.删除 v.版本]:')
@@ -70,8 +73,8 @@ def cli():
         fields = ['name', 'ipv4', 'ipv6', 'online_sec',
                   'conn_last', 'conn_count']
         res = htab.get_conds_execute(fields=fields)
-        res = map(lambda x:(*x[:3], int(x[3]),
-                            ts2str(x[4]), int(x[5])), res)
+        res = map(lambda x: (*x[:3], int(x[3]),
+                             ts2str(x[4]), int(x[5])), res)
         tab = PrettyTable()
         tab.add_column('name', [], align='l')
         tab.add_column('ipv4', [], align='l')
@@ -88,7 +91,7 @@ def cli():
             print('该名称的设备不存在')
             return
         ipv4 = input('请输入局域网IPv4:')
-        update_dict = {'ipv4':ipv4}
+        update_dict = {'ipv4': ipv4}
         period = input('请输入测试周期(单位秒,默认不改变):')
         try:
             period = float(period)
@@ -96,15 +99,15 @@ def cli():
             pass
         else:
             update_dict['period'] = period
-        htab.update_conds(cond_dict={'name':name},
-                         update_dict=update_dict,
-                         commit=True)
+        htab.update_conds(cond_dict={'name': name},
+                          update_dict=update_dict,
+                          commit=True)
     elif s == '4':
         name = input('请输入要删除的设备名称:')
         if not isExists(name):
             print('该名称的设备不存在')
         else:
-            htab.delete({'name':name}, commit=True)
+            htab.delete({'name': name}, commit=True)
     elif s == 'v':
         print(version_str)
 
@@ -112,4 +115,3 @@ def cli():
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         cli()
-

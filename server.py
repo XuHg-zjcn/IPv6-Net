@@ -39,10 +39,10 @@ class Server(threading.Thread):
             data, addr = self.sock.recvfrom(1000)
             i = 0
             res = bytearray()
-            #没有使用TG指令指定目标时，设置默认操作主机
-            pg = peerdict.local        #Gx指令操作的主机，默认本机
-            pp = self.find_p(addr[0])  #Px指令操作的主机，默认对方
-            #TODO: 处理找不到默认pp的情况
+            # 没有使用TG指令指定目标时，设置默认操作主机
+            pg = peerdict.local        # Gx指令操作的主机，默认本机
+            pp = self.find_p(addr[0])  # Px指令操作的主机，默认对方
+            # TODO: 处理找不到默认pp的情况
             while i < len(data):
                 if data[i] == Commd.TG.value:
                     i += 1
@@ -64,7 +64,7 @@ class Server(threading.Thread):
                     i += 1
                     res.append(Commd.PA.value)
                     res.extend(struct.pack('>Q', pg.version))
-                    #TODO: 处理无法获取IPv6地址情况
+                    # TODO: 处理无法获取IPv6地址情况
                     if pg == peerdict.local:
                         pg.check_update_addr()
                     res.extend(pg.ipv6.packed)
@@ -87,7 +87,7 @@ class Server(threading.Thread):
                 elif data[i] == Commd.GI.value:
                     i += 1
                     res.append(Commd.PI.value)
-                    #TODO: 添加支持
+                    # TODO: 添加支持
                     res.extend(struct.pack('>QH'), 0, 0)
                     res.extend(bytes(64))
                 else:

@@ -33,8 +33,10 @@ from protol import Commd
 hosts = Hosts(path=conf.hosts_file)
 q = queue.Queue()
 
+
 class Peer:
-    def __init__(self, name, pubkey, did, version, ipv4, ipv6=None, addr_sign=None, period=60.0):
+    def __init__(self, name, pubkey, did,
+                 version, ipv4, ipv6=None, addr_sign=None, period=60.0):
         self.name = name
         if pubkey is not None:
             pubkey = ed25519.VerifyingKey(pubkey)
@@ -58,7 +60,9 @@ class Peer:
         self.addr_sign = sign
         hname = self.name + conf.domain_suffix
         hosts.remove_all_matching('ipv6', hname)
-        target = HostsEntry(entry_type='ipv6', address=str(ipv6), names=[hname])
+        target = HostsEntry(entry_type='ipv6',
+                            address=str(ipv6),
+                            names=[hname])
         hosts.add([target])
         hosts.write()
         q.put(('update_ipv6', self.did, ipv6, version, sign))
@@ -91,8 +95,8 @@ class Peer:
     def put_pubkey(self, data):
         assert len(data) == 33
         assert data[0] == Commd.PK.value
-        #self.pubkey = ed25519.VerifyingKey(data[1:])
-        #TODO: 待实现
+        self.pubkey = ed25519.VerifyingKey(data[1:])
+        # TODO: 待实现
 
 
 class LocalPeer(Peer):
@@ -107,7 +111,7 @@ class LocalPeer(Peer):
             sign = conf.sk.sign(bytes(tmp))
             self.update_ipv6(ipv6, ver, sign)
         self.inc_time()
-        #TODO: 起动SyncTask
+        # TODO: 起动SyncTask
 
     def put_addr(self, data):
         # 禁止用数据更新本机地址
@@ -145,7 +149,9 @@ class PeerDict(threading.Thread):
         self.d4[peer.ipv4] = peer
 
     def load_db(self):
-        res = self.htab.get_conds_execute(fields=['name', 'pubkey', 'id', 'version', 'ipv4', 'ipv6', 'addr_sign', 'test_period'])
+        res = self.htab.get_conds_execute(
+            fields=['name', 'pubkey', 'id',
+                    'version', 'ipv4', 'ipv6', 'addr_sign', 'test_period'])
         for fields in res:
             if fields[2] == 0:
                 p = LocalPeer(*fields)
@@ -155,7 +161,7 @@ class PeerDict(threading.Thread):
             self.add(p)
 
     def run(self):
-        #sqlite只支持单线程操作,所以把所有sqlite操作都放到这里
+        # sqlite只支持单线程操作,所以把所有sqlite操作都放到这里
         conn = sqlite3.connect(conf.db_path)
         self.htab = HostTable(conn)
         self.load_db()
