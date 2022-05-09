@@ -34,19 +34,21 @@ def get_local_addr():
         ifa = netifaces.ifaddresses(iface)
         ipv4 = ifa.get(netifaces.AF_INET)
         ipv6 = ifa.get(netifaces.AF_INET6)
-        if ipv4:
-            for i in ipv4[::-1]:
+        if ipv4 and not last4:
+            for i in ipv4:
                 addr = ipaddress.IPv4Address(i['addr'])
                 if any(addr in net for net in LANNets):
                     last4 = addr
-        if ipv6:
-            for i in ipv6[::-1]:
+                    break
+        if ipv6 and not last6:
+            for i in ipv6:
                 addr = i['addr']
                 if '%' in addr:
                     continue
                 tmp = ipaddress.IPv6Address(addr)
                 if tmp.is_global:
                     last6 = tmp
+                    break
     return last4, last6
 
 

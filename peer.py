@@ -50,7 +50,7 @@ class Peer:
         self.ipv4 = ipv4
         self.ipv6 = ipv6
         self.addr_sign = addr_sign or bytes(64)
-        self.addr_tuple = (str(ipv4), 4646)
+        self.addr_tuple = ('::ffff:'+str(ipv4), 4646)
         self.period = period
         self.last_test_recv = False
 
@@ -127,6 +127,19 @@ class PeerDict(threading.Thread):
         self.d6 = {}
         self.d4 = {}
         self.local = None
+
+    def find_v4(self, addr):
+        return self.d4.get(ipaddress.IPv4Address(addr))
+
+    def find_v6(self, addr):
+        return self.d6.get(ipaddress.IPv6Address(addr))
+
+    def find_v46(self, addr):
+        addr = ipaddress.IPv6Address(addr)
+        if addr.ipv4_mapped:
+            return self.find_v4(addr.ipv4_mapped)
+        else:
+            return self.find_v6(addr)
 
     def add(self, peer):
         self.dk[peer.pubkey.to_bytes()] = peer

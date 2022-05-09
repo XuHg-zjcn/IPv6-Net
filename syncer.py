@@ -22,7 +22,6 @@ import struct
 from threading import Thread
 
 from peer import peerdict
-from server import soc
 from protol import Commd
 
 

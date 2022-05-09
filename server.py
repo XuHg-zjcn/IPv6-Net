@@ -27,26 +27,25 @@ from peer import peerdict
 from protol import Commd
 
 
-soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-soc.bind(('0.0.0.0', 4646))
-
 class Server(threading.Thread):
-    def __init__(self):
+    def __init__(self, sock, find_p):
+        '''
+        :sock: UDP socket
+        :find_p: func addr->peer
+        '''
         super().__init__()
-        self.queue = Queue()
         self.hlst = []
-
-    def find_p(self, addr):
-        return peerdict.d4.get(ipaddress.IPv4Address(addr[0]))
+        self.sock = sock
+        self.find_p = find_p
 
     def run(self):
         while True:
-            data, addr = soc.recvfrom(1000)
+            data, addr = self.sock.recvfrom(1000)
             i = 0
             res = bytearray()
             #没有使用TG指令指定目标时，设置默认操作主机
-            pg = peerdict.local     #Gx指令操作的主机，默认本机
-            pp = self.find_p(addr)  #Px指令操作的主机，默认对方
+            pg = peerdict.local        #Gx指令操作的主机，默认本机
+            pp = self.find_p(addr[0])  #Px指令操作的主机，默认对方
             #TODO: 处理找不到默认pp的情况
             while i < len(data):
                 if data[i] == Commd.TG.value:
@@ -98,4 +97,4 @@ class Server(threading.Thread):
                 else:
                     i += 1
             if len(res) > 0:
-                soc.sendto(bytes(res), addr)
+                self.sock.sendto(bytes(res), addr)

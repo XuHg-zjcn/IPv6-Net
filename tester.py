@@ -5,7 +5,6 @@ import threading
 import random
 
 from peer import peerdict, LocalPeer
-from server import soc
 from protol import Commd
 
 class Test:
@@ -24,9 +23,10 @@ class Test:
 
 
 class Tester(threading.Thread):
-    def __init__(self):
+    def __init__(self, sock):
         super().__init__()
         self.l = []
+        self.sock = sock
 
     def load_peer(self, pdx):
         for p in pdx.values():
@@ -41,7 +41,7 @@ class Tester(threading.Thread):
             if peer.pubkey is None:
                 s.append(Commd.GK.value)
             s.append(Commd.GA.value)
-            soc.sendto(bytes(s), peer.addr_tuple)
+            self.sock.sendto(bytes(s), peer.addr_tuple)
             print('test', peer.name)
 
     def test_all(self):
