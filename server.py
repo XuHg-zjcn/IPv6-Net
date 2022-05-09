@@ -16,13 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ########################################################################
-import socket
 import struct
 import threading
-import ipaddress
-from queue import Queue
 
-import conf
 from peer import peerdict
 from protol import Commd
 

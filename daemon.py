@@ -16,13 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ########################################################################
-import threading
 import socket
 
-import ip46
 import server
 import tester
-import conf
 import peer
 
 

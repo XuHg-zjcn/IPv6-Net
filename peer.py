@@ -17,8 +17,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ########################################################################
 import ipaddress
-import struct
-import socket
 import queue
 import threading
 import sqlite3
