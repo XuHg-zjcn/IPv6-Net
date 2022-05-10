@@ -44,7 +44,7 @@ class Tester(threading.Thread):
                 s.append(Commd.GK.value)
             s.append(Commd.GA.value)
             self.sock.sendto(bytes(s), peer.addr_tuple)
-            print('test', peer.name)
+            print('test', peer.name, peer.addr_tuple)
 
     def test_all(self):
         for T in self.tasks:
@@ -58,6 +58,9 @@ class Tester(threading.Thread):
             test = self.tasks.pop(0)
             if not test.peer.last_test_recv:
                 test.peer.disconn()
+                test.peer.addr_tuple = (test.peer.ipv6.compressed, 4646) \
+                    if test.peer.addr_tuple[0][:7] == '::ffff:' \
+                    else ('::ffff:'+test.peer.ipv4.compressed, 4646)
             test.peer.last_test_recv = False
             dt = test.t - time.monotonic()
             if dt > 0:
