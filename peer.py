@@ -22,15 +22,14 @@ import threading
 import sqlite3
 import ed25519
 
-from python_hosts import Hosts, HostsEntry
-
 import ip46
 import conf
+from hosts import Hosts
 from db import HostTable
 from protol import Commd
 
 
-hosts = Hosts(path=conf.hosts_file)
+hosts = Hosts(path=conf.hosts_file, block_name=conf.hosts_block_name)
 q = queue.Queue()
 
 
@@ -59,12 +58,8 @@ class Peer:
         self.version = version
         self.addr_sign = sign
         hname = self.name + conf.domain_suffix
-        hosts.remove_all_matching('ipv6', hname)
-        target = HostsEntry(entry_type='ipv6',
-                            address=str(ipv6),
-                            names=[hname])
-        hosts.add([target])
-        hosts.write()
+        hosts.auto_write(hname, str(ipv6))
+        hosts.flush()
         q.put(('update_ipv6', self.did, ipv6, version, sign))
 
     def inc_time(self):
@@ -165,6 +160,7 @@ class PeerDict(threading.Thread):
         conn = sqlite3.connect(conf.db_path)
         self.htab = HostTable(conn)
         self.load_db()
+        # TODO: 加载完成后同步hosts
         while True:
             p = q.get()
             getattr(self.htab, p[0])(*p[1:])

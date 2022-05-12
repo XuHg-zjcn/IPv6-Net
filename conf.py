@@ -6,6 +6,7 @@ import ed25519
 
 client_name = 'ipv6net_test'
 hosts_file = '/etc/hosts'
+hosts_block_name = 'IPv6Net'
 domain_suffix = '.local'
 
 udata_dir = 'data'
