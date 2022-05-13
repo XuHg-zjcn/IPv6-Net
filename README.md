@@ -8,11 +8,13 @@
 # 协议介绍
 每个设备储存一份数据库，含有其他设备的名称，局域网IPv4，公网IPv6地址等信息。  
 当设备间能通信时（都处于局域网中，知道对方IPv6等）时，实时同步数据库，并写入hosts文件中。  
+写入系统hosts需要root权限，如果不需要写入，可以将*conf.py*中`hosts_file`设置为其他路径。  
 具体协议请看[docs/spec.md](docs/spec.md)  
 
 # 安装方法
-1. 运行daemon.py文件
-1. 手动修改data.db
+1. 安装依赖库`sudo pip3 install prettytable ed25519 netifaces`(root用户安装)
+1. 运行`./cli.py`添加节点
+1. 运行`sudo ./daemon.py`进行测试
 1. 添加开机启动
    ```bash
    sudo cp files/ipv6netd /etc/init.d  #复制启动脚本
@@ -22,12 +24,15 @@
 
 # 更新计划
 1. `ip monitor address`
-1. 命令行修改数据库
 1. 实现数据库同步
-1. 数字签名，优先选用Ed25519
 1. 加密通信
 
 # 版本历史
 ## v0.1.0: (2022.3.19)
-  实现了一些简单功能，自动同步IPv6地址，记录一些信息
-  添加了README文档
+- 实现了一些简单功能，自动同步IPv6地址，记录一些信息
+- 添加了README文档
+
+## v0.2.0: (2022.5.14)
+- CLI操作界面
+- ed25519签名
+- 更新通信协议

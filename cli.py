@@ -31,7 +31,7 @@ conn = sqlite3.connect(conf.db_path)
 htab = HostTable(conn)
 
 version_str = '''
-IPv6Net v0.1.0-3
+IPv6Net v0.2.0
 Copyright (C) 2022  Xu Ruijun
 许可证 GPLv3+：GNU 通用公共许可证第 3 版或更新版本。
 本程序是自由软件：您可以自由修改和重新发布它。
