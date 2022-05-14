@@ -76,7 +76,7 @@ class Tester(threading.Thread):
             if not test.peer.last_test_recv:
                 test.peer.disconn()
                 test.peer.addr_tuple = (test.peer.ipv6.compressed, 4646) \
-                    if test.peer.addr_tuple[0][:7] == '::ffff:' \
+                    if test.peer.addr_tuple[0][:7] == '::ffff:' and test.peer.ipv6 \
                     else ('::ffff:'+test.peer.ipv4.compressed, 4646)
             test.peer.last_test_recv = False
             dt = test.t - time.monotonic()
