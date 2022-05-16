@@ -152,10 +152,10 @@ class Hosts:
         baddr39 = addr.ljust(39).encode()
         self.f.write(baddr39)
 
-    def auto_write(self, name, addr):
+    def auto_write(self, name, addr, addnew=False):
         if name in self.d:
             self.update(name, addr)
-        else:
+        elif addnew:
             self.add(name, addr)
 
     def flush(self):

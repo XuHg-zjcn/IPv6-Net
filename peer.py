@@ -53,13 +53,16 @@ class Peer:
         self.period = period
         self.last_test_recv = False
 
+    def update_hosts(self, addnew=False):
+        hname = self.name + conf.domain_suffix
+        hosts.auto_write(hname, str(self.ipv6), addnew)
+        hosts.flush()
+
     def update_ipv6(self, ipv6, version, sign):
         self.ipv6 = ipv6
         self.version = version
         self.addr_sign = sign
-        hname = self.name + conf.domain_suffix
-        hosts.auto_write(hname, str(ipv6))
-        hosts.flush()
+        self.update_hosts()
         q.put(('update_ipv6', self.did, ipv6, version, sign))
 
     def inc_time(self):
@@ -154,6 +157,15 @@ class PeerDict(threading.Thread):
             else:
                 p = Peer(*fields)
             self.add(p)
+            hname = p.name + conf.domain_suffix
+            if hname in hosts.d and p.ipv6:
+                try:
+                    x = ipaddress.IPv6Address(hosts.d[hname])
+                except Exception:
+                    p.update_hosts()
+                else:
+                    if x != p.ipv6:
+                        p.update_hosts()
 
     def run(self):
         # sqlite只支持单线程操作,所以把所有sqlite操作都放到这里
