@@ -47,6 +47,7 @@ class Server(threading.Thread):
                 if data[i] == Commd.TG.value:
                     i += 1
                     p = peerdict.dk.get(data[i:i+32])
+                    i += 32
                     if p is None:
                         res.append(Commd.NF.value)
                         break
@@ -74,7 +75,7 @@ class Server(threading.Thread):
                         res.extend(bytes(64))
                 elif data[i] == Commd.PA.value:
                     if pp != peerdict.local:
-                        pp.put_addr(data)
+                        pp.put_addr(data[i:i+89])
                     i += 89
                 elif data[i] == Commd.GK.value:
                     i += 1
