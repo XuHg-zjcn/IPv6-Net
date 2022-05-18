@@ -20,6 +20,7 @@ import socket
 
 import server
 import tester
+import syncer
 import peer
 
 
@@ -28,5 +29,7 @@ if __name__ == '__main__':
     sock6.bind(('::', 4646))
     Server6 = server.Server(sock6, peer.peerdict.find_v46)
     Server6.start()
-    Tester = tester.Tester(sock6)
+    syncth = syncer.SyncThread(sock6)
+    syncth.start()
+    Tester = tester.Tester(sock6, syncth)
     Tester.start()

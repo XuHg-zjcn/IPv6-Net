@@ -22,6 +22,7 @@ import threading
 import random
 
 from peer import peerdict, LocalPeer
+from syncer import SyncTask
 from protol import Commd
 
 
@@ -41,10 +42,11 @@ class Test:
 
 
 class Tester(threading.Thread):
-    def __init__(self, sock):
+    def __init__(self, sock, syncth):
         super().__init__()
         self.tasks = []
         self.sock = sock
+        self.syncth = syncth
 
     def load_peer(self, pdx):
         for p in pdx.values():
@@ -54,7 +56,9 @@ class Tester(threading.Thread):
 
     def test(self, peer):
         if isinstance(peer, LocalPeer):
-            peer.check_update_addr()
+            if peer.check_update_addr():
+                stask = SyncTask(peer, m=10, knows=[peer])
+                self.syncth.q.put(stask)
         else:
             s = bytearray()
             if peer.pubkey is None:

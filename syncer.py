@@ -16,8 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ########################################################################
+import time
 import random
 import struct
+import queue
+import bisect
 
 from threading import Thread
 
@@ -25,23 +28,87 @@ from peer import peerdict
 from protol import Commd
 
 
-class SyncTask(Thread):
-    def __init__(self, p, init_set=None):
-        super().__init__()
-        self.data = struct.pack('>BII',
-                                Commd.POA.value, int(p.ipv4), p.version) + \
-            int(p.ipv6).to_bytes(16, 'big')
+class SyncTask:
+    def __init__(self, p, m=3, delay=1, rdelay=0.2, knows=None):
+        tmp = bytearray()
+        tmp.append(Commd.TG.value)
+        tmp.extend(p.pubkey.to_bytes())
+        tmp.append(Commd.PA.value)
+        tmp.extend(p.ipv6.packed)
+        tmp.extend(p.addr_sign)
+        self.m = min(m, len(peerdict.dk)-1)  # 计划发送次数
+        self.count = 0                       # 已发送次数
+        self.data = bytes(tmp)
         self.peer = p
-        if init_set is None:
-            init_set = set()
-        self.knows = init_set  # 这些节点已经有数据了
+        self.tnext = None
+        self.delay = delay
+        self.rdelay = rdelay
+        if knows:
+            self.knows = sorted(map(lambda x:peerdict.lst.index(x), knows))
+        else:
+            self.knows = []
+        self.next2()
+
+    def __lt__(self, other):
+        return self.tnext < other.tnext
+
+    def next1(self):
+        self.tnext += self.delay + self.rdelay*random.random()
+
+    def next2(self):
+        self.tnext = time.monotonic() + self.delay + self.rdelay*random.random()
+
+    def choice_target(self):
+        # TODO: peerdict节点变动时更新self.knows
+        if len(self.knows) >= len(peerdict.lst):
+            return None
+        i0 = i1 = random.randrange(len(peerdict.lst) - len(self.knows))
+        while True:
+            i2 = i0 + bisect.bisect(self.knows, i1)
+            if i1 == i2:
+                break
+            else:
+                i1 = i2
+        bisect.insort(self.knows, i2)
+        p = peerdict.lst[i2]
+        return p
+
+
+class SyncThread(Thread):
+    def __init__(self, sock):
+        super().__init__()
+        self.q = queue.Queue()
+        self.tasks = []
+        self.sock = sock
+
+    def next_task(self):
+        if len(self.tasks) == 0:
+            self.tasks.append(self.q.get())
+        while True:
+            wait = self.tasks[0].tnext - time.monotonic()
+            if wait <= 0:
+                # 超出时间
+                task = self.tasks.pop(0)
+                task.next2()
+                return task
+            try:
+                x = self.q.get(timeout=wait)
+            except queue.Empty:
+                # 时间刚刚好
+                task = self.tasks.pop(0)
+                task.next1()
+                return task
+            else:
+                bisect.insort(self.tasks, x)
 
     def run(self):
-        while len(self.knows) < len(peerdict.d4):
-            p4 = random.sample(peerdict.d4.keys(), 1)[0]
-            if p4 in self.knows:
+        while True:
+            task = self.next_task()
+            target = task.choice_target()
+            if target is None:
                 continue
-            soc.sendto(self.data, (str(p4), 4646))
-            self.knows.add(p4)
-
-# TODO: start SyncTask when update local addresss
+            print('sync', target.name)
+            self.sock.sendto(task.data, target.addr_tuple)
+            task.count += 1
+            if task.count < task.m:
+                bisect.insort(self.tasks, task)

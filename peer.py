@@ -21,6 +21,7 @@ import queue
 import threading
 import sqlite3
 import ed25519
+import bisect
 
 import ip46
 import conf
@@ -96,11 +97,15 @@ class Peer:
         self.pubkey = ed25519.VerifyingKey(data[1:])
         # TODO: 待实现
 
+    def __lt__(self, other):
+        return self.pubkey.vk_s < other.pubkey.vk_s
+
 
 class LocalPeer(Peer):
     def check_update_addr(self):
         ipv4, ipv6 = ip46.get_local_addr()
-        if ipv6 != self.ipv6:
+        self.inc_time()
+        if ipv6 and ipv6 != self.ipv6:
             ver = self.version + 1
             tmp = bytearray()
             tmp.append(Commd.PA.value)
@@ -108,8 +113,9 @@ class LocalPeer(Peer):
             tmp.extend(ipv6.packed)
             sign = conf.sk.sign(bytes(tmp))
             self.update_ipv6(ipv6, ver, sign)
-        self.inc_time()
-        # TODO: 起动SyncTask
+            return True
+        else:
+            return False
 
     def put_addr(self, data):
         # 禁止用数据更新本机地址
@@ -126,6 +132,7 @@ class PeerDict(threading.Thread):
         self.dk = {}
         self.d6 = {}
         self.d4 = {}
+        self.lst = []
         self.local = None
 
     def find_v4(self, addr):
@@ -145,6 +152,7 @@ class PeerDict(threading.Thread):
         self.dk[peer.pubkey.to_bytes()] = peer
         self.d6[peer.ipv6] = peer
         self.d4[peer.ipv4] = peer
+        bisect.insort(self.lst, peer)
 
     def load_db(self):
         res = self.htab.get_conds_execute(
