@@ -23,6 +23,85 @@ from peer import peerdict
 from protol import Commd
 
 
+class Procer:
+    def __init__(self, data, pp):
+        self.data = data
+        self.i = 0
+        self.res = bytearray()
+        # 没有使用TG指令指定目标时，设置默认操作主机
+        self.pg = peerdict.local        # Gx指令操作的主机，默认本机
+        self.pp = pp                    # Px指令操作的主机，默认对方
+
+    def TG(self):
+        self.i += 1
+        p = peerdict.dk.get(self.data[self.i:self.i+32])
+        self.i += 32
+        if p is None:
+            self.res.append(Commd.NF.value)
+        self.pg = self.pp = p
+
+    def GN(self):
+        self.i += 1
+        self.res.append(Commd.PN.value)
+        self.res.extend(struct.pack('>H', len(self.pg.name)))
+        self.res.extend(self.pg.name.encode())
+
+    def PN(self):
+        self.i += 1
+        self.i += int.from_bytes(self.data[self.i:self.i+2], 'big')
+        self.i += 66
+
+    def GA(self):
+        self.i += 1
+        self.res.append(Commd.PA.value)
+        self.res.extend(struct.pack('>Q', self.pg.version))
+        # TODO: 处理无法获取IPv6地址情况
+        if self.pg == peerdict.local:
+            self.pg.check_update_addr()
+        self.res.extend(self.pg.ipv6.packed)
+        if self.pg.addr_sign:
+            self.res.extend(self.pg.addr_sign)
+        else:
+            self.res.extend(bytes(64))
+
+    def PA(self):
+        if self.pp != peerdict.local:
+            self.pp.put_addr(self.data[self.i:self.i+89])
+        self.i += 89
+
+    def GK(self):
+        self.i += 1
+        self.res.append(Commd.PK.value)
+        self.res.extend(self.pg.pubkey)
+
+    def PK(self):
+        if self.pp != peerdict.local:
+            self.pp.put_pubkey(self.data[self.i:self.i+33])
+        self.i += 33
+
+    def GI(self):
+        self.i += 1
+        self.res.append(Commd.PI.value)
+        # TODO: 添加支持
+        self.res.extend(struct.pack('>QH'), 0, 0)
+        self.res.extend(bytes(64))
+
+    def proc(self):
+        while self.i < len(self.data):
+            try:
+                fname = Commd(self.data[self.i]).name
+            except ValueError:
+                self.i += 1
+                continue
+            try:
+                func = getattr(self, fname)
+            except AttributeError:
+                pass
+            else:
+                func()
+        return bytes(self.res)
+
+
 class Server(threading.Thread):
     def __init__(self, sock, find_p):
         '''
@@ -37,61 +116,12 @@ class Server(threading.Thread):
     def run(self):
         while True:
             data, addr = self.sock.recvfrom(1000)
-            i = 0
-            res = bytearray()
-            # 没有使用TG指令指定目标时，设置默认操作主机
-            pg = peerdict.local        # Gx指令操作的主机，默认本机
-            pp = self.find_p(addr[0])  # Px指令操作的主机，默认对方
             # TODO: 处理找不到默认pp的情况
-            while i < len(data):
-                if data[i] == Commd.TG.value:
-                    i += 1
-                    p = peerdict.dk.get(data[i:i+32])
-                    i += 32
-                    if p is None:
-                        res.append(Commd.NF.value)
-                        break
-                    pg = pp = p
-                elif data[i] == Commd.GN.value:
-                    i += 1
-                    res.append(Commd.PN.value)
-                    res.extend(struct.pack('>H', len(pg.name)))
-                    res.extend(pg.name.encode())
-                elif data[i] == Commd.PN.value:
-                    i += 1
-                    i += int.from_bytes(data[i:i+2], 'big')
-                    i += 66
-                elif data[i] == Commd.GA.value:
-                    i += 1
-                    res.append(Commd.PA.value)
-                    res.extend(struct.pack('>Q', pg.version))
-                    # TODO: 处理无法获取IPv6地址情况
-                    if pg == peerdict.local:
-                        pg.check_update_addr()
-                    res.extend(pg.ipv6.packed)
-                    if pg.addr_sign:
-                        res.extend(pg.addr_sign)
-                    else:
-                        res.extend(bytes(64))
-                elif data[i] == Commd.PA.value:
-                    if pp != peerdict.local:
-                        pp.put_addr(data[i:i+89])
-                    i += 89
-                elif data[i] == Commd.GK.value:
-                    i += 1
-                    res.append(Commd.PK.value)
-                    res.extend(pg.pubkey)
-                elif data[i] == Commd.PK.value:
-                    if pp != peerdict.local:
-                        pp.put_pubkey(data[i:i+33])
-                    i += 33
-                elif data[i] == Commd.GI.value:
-                    i += 1
-                    res.append(Commd.PI.value)
-                    # TODO: 添加支持
-                    res.extend(struct.pack('>QH'), 0, 0)
-                    res.extend(bytes(64))
-                else:
-                    i += 1
+            pp = self.find_p(addr[0])
+            if pp is None:
+                print("can't find host by IP address")
+
+            res = Procer(data, pp).proc()
+
             if len(res) > 0:
-                self.sock.sendto(bytes(res), addr)
+                self.sock.sendto(res, addr)
