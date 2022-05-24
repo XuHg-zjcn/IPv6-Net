@@ -17,6 +17,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ########################################################################
 import os
+import sys
 import stat
 
 import ed25519
@@ -31,6 +32,7 @@ udata_dir = 'data'
 db_path = 'data/data.db'
 key_path = 'data/key'
 
+os.chdir(os.path.dirname(sys.argv[0]))
 if not os.path.exists(udata_dir):
     os.makedirs(udata_dir)
 
