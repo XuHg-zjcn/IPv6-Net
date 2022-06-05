@@ -31,6 +31,9 @@ class Procer:
         # 没有使用TG指令指定目标时，设置默认操作主机
         self.pg = peerdict.local        # Gx指令操作的主机，默认本机
         self.pp = pp                    # Px指令操作的主机，默认对方
+        if pp is None:
+            # 不知道对方目标，请求公钥
+            self.res.append(Commd.GK.value)
 
     def TG(self):
         self.i += 1
@@ -86,12 +89,32 @@ class Procer:
         self.res.extend(struct.pack('>QH'), 0, 0)
         self.res.extend(bytes(64))
 
+    def GV(self):
+        self.res.append(self.pg.version.to_bytes(8, 'big'))
+
+    def PV(self):
+        self.i += 1
+        ver = int.from_bytes(self.data[self.i:self.i+8], 'big')
+        if ver > self.pp.version:
+            self.res.extend(Commd.GA.value)
+        self.i += 8
+
+    def InVg(self):
+        self.i += 1
+        ver_ = int.from_bytes(self.data[self.i:self.i+8], 'big')
+        if ver_ >= self.pg.version:
+            self.pg = None
+        self.i += 8
+
     def proc(self):
         while self.i < len(self.data):
             try:
                 fname = Commd(self.data[self.i]).name
             except ValueError:
                 self.i += 1
+                continue
+            if fname[0] == 'G' and self.pg is None or \
+               fname[0] == 'P' and self.pp is None:
                 continue
             try:
                 func = getattr(self, fname)

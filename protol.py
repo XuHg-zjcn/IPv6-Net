@@ -32,4 +32,7 @@ class Commd(Enum):  # Params
     PL = 0x09       #
     TG = 0x0A       # Pub
     NF = 0x0B       #
-    STAT = 0x0C     #
+    GV = 0x0C       #
+    PV = 0x0D       # Ver
+    InVg = 0x0E     # Ver
+    STAT = 0x0F     #

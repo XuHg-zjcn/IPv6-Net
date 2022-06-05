@@ -63,6 +63,10 @@ class Tester(threading.Thread):
             s = bytearray()
             if peer.pubkey is None:
                 s.append(Commd.GK.value)
+            s.append(Commd.PV.value)
+            s.extend(peerdict.local.version.to_bytes(8, 'big'))
+            s.append(Commd.InVg.value)
+            s.extend(peer.version.to_bytes(8, 'big'))
             s.append(Commd.GA.value)
             self.sock.sendto(bytes(s), peer.addr_tuple)
             print('test', peer.name, peer.addr_tuple)

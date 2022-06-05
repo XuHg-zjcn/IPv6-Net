@@ -41,6 +41,7 @@ class HostTable(SqlTable):
         ("version", "INTEGER"),       # 版本
         ("level", "INTEGER")          # 等级
     ]
+    # TODO: 保存对方知道自己的版本
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
