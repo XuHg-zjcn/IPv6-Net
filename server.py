@@ -31,9 +31,10 @@ class Procer:
         # 没有使用TG指令指定目标时，设置默认操作主机
         self.pg = peerdict.local        # Gx指令操作的主机，默认本机
         self.pp = pp                    # Px指令操作的主机，默认对方
-        if pp is None:
-            # 不知道对方目标，请求公钥
+        if not pp and data[0] != Commd.PK.value:
+            # 不知道对方目标，请求公钥和地址
             self.res.append(Commd.GK.value)
+            self.res.append(Commd.GA.value)
 
     def TG(self):
         self.i += 1
@@ -45,6 +46,8 @@ class Procer:
 
     def GN(self):
         self.i += 1
+        if not self.pg:
+            return
         self.res.append(Commd.PN.value)
         self.res.extend(struct.pack('>H', len(self.pg.name)))
         self.res.extend(self.pg.name.encode())
@@ -56,6 +59,8 @@ class Procer:
 
     def GA(self):
         self.i += 1
+        if not self.pg:
+            return
         self.res.append(Commd.PA.value)
         self.res.extend(struct.pack('>Q', self.pg.version))
         # TODO: 处理无法获取IPv6地址情况
@@ -68,35 +73,41 @@ class Procer:
             self.res.extend(bytes(64))
 
     def PA(self):
-        if self.pp != peerdict.local:
+        if self.pp and self.pp != peerdict.local:
             self.pp.put_addr(self.data[self.i:self.i+89])
         self.i += 89
 
     def GK(self):
         self.i += 1
+        if not self.pg:
+            return
         self.res.append(Commd.PK.value)
-        self.res.extend(self.pg.pubkey)
+        self.res.extend(self.pg.pubkey.to_bytes())
 
     def PK(self):
-        if self.pp != peerdict.local:
+        if self.pp and self.pp != peerdict.local:
             self.pp.put_pubkey(self.data[self.i:self.i+33])
         self.i += 33
 
     def GI(self):
         self.i += 1
+        if not self.pg:
+            return
         self.res.append(Commd.PI.value)
         # TODO: 添加支持
         self.res.extend(struct.pack('>QH'), 0, 0)
         self.res.extend(bytes(64))
 
     def GV(self):
+        if not self.pg:
+            return
         self.res.append(self.pg.version.to_bytes(8, 'big'))
 
     def PV(self):
         self.i += 1
         ver = int.from_bytes(self.data[self.i:self.i+8], 'big')
-        if ver > self.pp.version:
-            self.res.extend(Commd.GA.value)
+        if self.pp and ver > self.pp.version:
+            self.res.append(Commd.GA.value)
         self.i += 8
 
     def InVg(self):
@@ -111,15 +122,11 @@ class Procer:
             try:
                 fname = Commd(self.data[self.i]).name
             except ValueError:
-                self.i += 1
-                continue
-            if fname[0] == 'G' and self.pg is None or \
-               fname[0] == 'P' and self.pp is None:
-                continue
+                break
             try:
                 func = getattr(self, fname)
             except AttributeError:
-                pass
+                break
             else:
                 func()
         return bytes(self.res)
@@ -147,4 +154,4 @@ class Server(threading.Thread):
             res = Procer(data, pp).proc()
 
             if len(res) > 0:
-                self.sock.sendto(res, addr)
+                self.sock.sendto(res, addr[:2])

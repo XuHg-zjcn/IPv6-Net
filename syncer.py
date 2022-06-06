@@ -31,7 +31,7 @@ from protol import Commd
 class SyncTask:
     def __init__(self, p, m=3, delay=1, rdelay=0.2, knows=None):
         tmp = bytearray()
-        tmp.append(Commd.TG.value)
+        tmp.append(Commd.PK.value)
         tmp.extend(p.pubkey.to_bytes())
         tmp.append(Commd.PA.value)
         tmp.extend(p.ipv6.packed)
