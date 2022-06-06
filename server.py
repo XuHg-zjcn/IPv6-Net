@@ -36,14 +36,6 @@ class Procer:
             self.res.append(Commd.GK.value)
             self.res.append(Commd.GA.value)
 
-    def TG(self):
-        self.i += 1
-        p = peerdict.dk.get(self.data[self.i:self.i+32])
-        self.i += 32
-        if p is None:
-            self.res.append(Commd.NF.value)
-        self.pg = self.pp = p
-
     def GN(self):
         self.i += 1
         if not self.pg:
@@ -85,9 +77,12 @@ class Procer:
         self.res.extend(self.pg.pubkey.to_bytes())
 
     def PK(self):
-        if self.pp and self.pp != peerdict.local:
-            self.pp.put_pubkey(self.data[self.i:self.i+33])
-        self.i += 33
+        self.i += 1
+        p = peerdict.dk.get(self.data[self.i:self.i+32])
+        self.i += 32
+        if p is None:
+            self.res.append(Commd.NF.value)
+        self.pg = self.pp = p
 
     def GI(self):
         self.i += 1

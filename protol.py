@@ -30,7 +30,6 @@ class Commd(Enum):  # Params
     PI = 0x07       # Ver, Len, Info, Sign
     GL = 0x08       #
     PL = 0x09       #
-    TG = 0x0A       # Pub
     NF = 0x0B       #
     GV = 0x0C       #
     PV = 0x0D       # Ver
