@@ -98,7 +98,7 @@ def cli():
         except Exception:
             pass
         else:
-            update_dict['period'] = period
+            update_dict['test_period'] = period
         htab.update_conds(cond_dict={'name': name},
                           update_dict=update_dict,
                           commit=True)
