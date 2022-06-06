@@ -18,6 +18,7 @@
 ########################################################################
 import struct
 import threading
+import logging
 
 from peer import peerdict
 from protol import Commd
@@ -117,10 +118,12 @@ class Procer:
             try:
                 fname = Commd(self.data[self.i]).name
             except ValueError:
+                logging.error(f'unkown commd 0x{self.data[self.i]:02x}')
                 break
             try:
                 func = getattr(self, fname)
             except AttributeError:
+                logging.error(f'not implemented commd {fname}')
                 break
             else:
                 func()
@@ -144,9 +147,12 @@ class Server(threading.Thread):
             # TODO: 处理找不到默认pp的情况
             pp = self.find_p(addr[0])
             if pp is None:
-                print("can't find host by IP address")
+                logging.info(f"can't find host by IP address {addr[:2]}")
 
             res = Procer(data, pp).proc()
 
             if len(res) > 0:
                 self.sock.sendto(res, addr[:2])
+            logging.debug(f'from {addr[:2]}\n'
+                          f'recv {data.hex()}\n'
+                          f'resp {res.hex()}')

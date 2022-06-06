@@ -22,6 +22,7 @@ import threading
 import sqlite3
 import ed25519
 import bisect
+import logging
 
 import ip46
 import conf
@@ -81,7 +82,7 @@ class Peer:
         try:
             self.pubkey.verify(sign, data[:25])
         except ed25519.BadSignatureError:
-            print('sign error', self.name)
+            logging.warning(f'sign error {self.name}')
             return None
         else:
             self.inc_time()

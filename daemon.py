@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ########################################################################
+import os
 import socket
+import logging
 
 import server
 import tester
@@ -25,6 +27,8 @@ import peer
 
 
 if __name__ == '__main__':
+    if os.isatty(1):
+        logging.basicConfig(level=logging.DEBUG)
     sock6 = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
     sock6.bind(('::', 4646))
     Server6 = server.Server(sock6, peer.peerdict.find_v46)

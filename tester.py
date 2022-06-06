@@ -20,6 +20,7 @@ import time
 import bisect
 import threading
 import random
+import logging
 
 from peer import peerdict, LocalPeer
 from syncer import SyncTask
@@ -69,7 +70,7 @@ class Tester(threading.Thread):
             s.extend(peer.version.to_bytes(8, 'big'))
             s.append(Commd.GA.value)
             self.sock.sendto(bytes(s), peer.addr_tuple)
-            print('test', peer.name, peer.addr_tuple)
+            logging.info(f'test {peer.name} {peer.addr_tuple}')
 
     def test_all(self):
         for T in self.tasks:
