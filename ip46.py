@@ -16,6 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ########################################################################
+import os
+import time
+import socket
+import logging
+import threading
 import ipaddress
 import netifaces
 
@@ -28,32 +33,96 @@ LANNets = [
 
 
 def get_local_addr():
-    last4 = None
-    last6 = None
-    for iface in netifaces.interfaces():
-        ifa = netifaces.ifaddresses(iface)
-        ipv4 = ifa.get(netifaces.AF_INET)
-        ipv6 = ifa.get(netifaces.AF_INET6)
-        if ipv4 and not last4:
-            for i in ipv4:
-                addr = ipaddress.IPv4Address(i['addr'])
-                if any(addr in net for net in LANNets):
-                    last4 = addr
-                    break
-        if ipv6 and not last6:
-            for i in ipv6:
-                addr = i['addr']
-                if '%' in addr:
-                    continue
-                tmp = ipaddress.IPv6Address(addr)
-                if tmp.is_global:
-                    last6 = tmp
-                    break
-    return last4, last6
+    def find_addr(w, spt):
+        x = list(filter(lambda x: w in x, spt))
+        if len(x) > 0:
+            x = x[0].split()[1].split('/')[0]
+        else:
+            x = None
+        return x
+    with os.popen('ip address show scope global primary') as p:
+        res = p.read()
+    spt = res.split('\n')
+    x4 = find_addr('inet', spt)
+    x6 = find_addr('inet6', spt)
+    if x4:
+        x4 = ipaddress.IPv4Address(x4)
+    if x6:
+        x6 = ipaddress.IPv6Address(x6)
+    return x4, x6
 
 
-def ClientUDP(s, ipv4, timeout=10):
-    s.sendto(b'\x01', (ipv4, 4646))
-    r = s.recv(10000)
-    s.close()
-    return r
+def a2s_4(addr):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((addr.compressed, 4646))
+    sock.settimeout(1)  # recvfrom时，在另一个线程中close后，仍然会阻塞
+    return sock         # 设置一个超时时间，每次调用recvfrom最多阻塞1s
+
+
+def a2s_6(addr):
+    sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+    sock.bind((addr.compressed, 4646))
+    sock.settimeout(1)
+    return sock
+
+
+class IPState:
+    def __init__(self, a2s):
+        self.addr = None
+        self.sock = None
+        self.a2s = a2s
+        self.event = threading.Event()
+
+    def clear(self):
+        self.event.clear()
+        self.addr = None
+        if self.sock:
+            self.sock.close()
+        self.sock = None
+
+    def update(self, addr):
+        if addr != self.addr:
+            old_addr = self.addr
+            self.clear()
+            if addr is not None:
+                # 延时改为1会出现OSError: [Errno 99] Cannot assign requested address
+                time.sleep(2)
+                self.addr = addr
+                self.sock = self.a2s(addr)
+                self.event.set()
+            logging.info(f'addr change {old_addr} -> {addr}')
+
+    def sendto(self, data, addr):
+        while True:
+            self.event.wait()
+            try:
+                r = self.sock.sendto(data, addr)
+            except (OSError, AttributeError) as e:
+                time.sleep(1)
+            else:
+                return r
+
+    def recvfrom(self, size):
+        while True:
+            self.event.wait()
+            try:
+                r = self.sock.recvfrom(size)
+            except (OSError, AttributeError) as e:
+                time.sleep(1)
+            else:
+                return r
+
+
+# TODO: 使用`ip monitor address`监测地址变化
+class IPMon(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        self.stat4 = IPState(a2s_4)
+        self.stat6 = IPState(a2s_6)
+
+    def run(self):
+        while True:
+            addr4, addr6 = get_local_addr()
+            self.stat4.update(addr4)
+            self.stat6.update(addr6)
+            time.sleep(1)

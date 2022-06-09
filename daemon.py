@@ -20,6 +20,7 @@ import os
 import socket
 import logging
 
+import ip46
 import server
 import tester
 import syncer
@@ -29,11 +30,13 @@ import peer
 if __name__ == '__main__':
     if os.isatty(1):
         logging.basicConfig(level=logging.DEBUG)
-    sock6 = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
-    sock6.bind(('::', 4646))
-    Server6 = server.Server(sock6, peer.peerdict.find_v46)
+    ipmon = ip46.IPMon()
+    ipmon.start()
+    Server4 = server.Server(ipmon.stat4, peer.peerdict.find_v4)
+    Server4.start()
+    Server6 = server.Server(ipmon.stat6, peer.peerdict.find_v6)
     Server6.start()
-    syncth = syncer.SyncThread(sock6)
+    syncth = syncer.SyncThread(ipmon.stat6)
     syncth.start()
-    Tester = tester.Tester(sock6, syncth)
+    Tester = tester.Tester(ipmon.stat6, syncth)
     Tester.start()
