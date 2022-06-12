@@ -61,9 +61,11 @@ class Peer:
         hosts.flush()
 
     def update_ipv6(self, ipv6, version, sign):
+        peerdict.d6.pop(self.ipv6)
         self.ipv6 = ipv6
         self.version = version
         self.addr_sign = sign
+        peerdict.d6[ipv6] = self
         self.update_hosts()
         q.put(('update_ipv6', self.did, ipv6, version, sign))
 
