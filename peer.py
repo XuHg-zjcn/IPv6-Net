@@ -51,8 +51,8 @@ class Peer:
         self.ipv4 = ipv4
         self.ipv6 = ipv6
         self.addr_sign = addr_sign or bytes(64)
-        self.addr_tuple = ('::ffff:'+str(ipv4), 4646)
         self.period = period
+        self.last_addr = 6
         self.last_test_recv = False
 
     def update_hosts(self, addnew=False):

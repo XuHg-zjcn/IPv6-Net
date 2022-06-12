@@ -43,10 +43,11 @@ class Test:
 
 
 class Tester(threading.Thread):
-    def __init__(self, sock, syncth):
+    def __init__(self, sock4, sock6, syncth):
         super().__init__()
         self.tasks = []
-        self.sock = sock
+        self.sock4 = sock4
+        self.sock6 = sock6
         self.syncth = syncth
 
     def load_peer(self, pdx):
@@ -69,8 +70,15 @@ class Tester(threading.Thread):
             s.append(Commd.InVg.value)
             s.extend(peer.version.to_bytes(8, 'big'))
             s.append(Commd.GA.value)
-            self.sock.sendto(bytes(s), peer.addr_tuple)
-            logging.info(f'test {peer.name} {peer.addr_tuple}')
+            s = bytes(s)
+            if peer.last_addr == 4:
+                self.sock4.sendto(s, (peer.ipv4.compressed, 4646))
+                logging.info(f'test {peer.name} ({peer.ipv4.compressed})')
+            elif peer.last_addr == 6:
+                self.sock6.sendto(s, (peer.ipv6.compressed, 4646))
+                logging.info(f'test {peer.name} ({peer.ipv6.compressed})')
+            else:
+                raise ValueError(f'peer.last_addr = {peer.last_addr}')
 
     def test_all(self):
         for T in self.tasks:
@@ -84,9 +92,7 @@ class Tester(threading.Thread):
             test = self.tasks.pop(0)
             if not test.peer.last_test_recv:
                 test.peer.disconn()
-                test.peer.addr_tuple = (test.peer.ipv6.compressed, 4646) \
-                    if test.peer.addr_tuple[0][:7] == '::ffff:' and test.peer.ipv6 \
-                    else ('::ffff:'+test.peer.ipv4.compressed, 4646)
+                test.peer.last_addr = 6 if test.peer.last_addr == 4 else 4
             test.peer.last_test_recv = False
             dt = test.t - time.monotonic()
             if dt > 0:

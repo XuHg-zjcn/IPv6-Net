@@ -21,6 +21,7 @@ import random
 import struct
 import queue
 import bisect
+import logging
 
 from threading import Thread
 
@@ -75,11 +76,12 @@ class SyncTask:
 
 
 class SyncThread(Thread):
-    def __init__(self, sock):
+    def __init__(self, sock4, sock6):
         super().__init__()
         self.q = queue.Queue()
         self.tasks = []
-        self.sock = sock
+        self.sock4 = sock4
+        self.sock6 = sock6
 
     def next_task(self):
         if len(self.tasks) == 0:
@@ -107,8 +109,14 @@ class SyncThread(Thread):
             target = task.choice_target()
             if target is None:
                 continue
-            print('sync', target.name)
-            self.sock.sendto(task.data, target.addr_tuple)
+            if target.last_addr == 4:
+                self.sock4.sendto(task.data, (target.ipv4.compressed, 4646))
+                logging.info(f'sync {task.peer.name} -> {target.name} ({target.ipv4.compressed})')
+            elif target.last_addr == 6:
+                self.sock6.sendto(task.data, (target.ipv6.compressed, 4646))
+                logging.info(f'sync {task.peer.name} -> {target.name} ({target.ipv6.compressed})')
+            else:
+                raise ValueError(f'target.last_addr = {target.last_addr}')
             task.count += 1
             if task.count < task.m:
                 bisect.insort(self.tasks, task)
