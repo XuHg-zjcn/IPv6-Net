@@ -69,12 +69,10 @@ class Peer:
         self.update_hosts()
         q.put(('update_ipv6', self.did, ipv6, version, sign))
 
-    def inc_time(self):
-        self.last_test_recv = True
-        q.put(('inc_time', self.did))
-
-    def disconn(self):
-        q.put(('disconn', self.did))
+    def __getattr__(self, name):
+        assert hasattr(HostTable, name) , f"'HostTable' has no attribute '{name}', disallow put to queue"
+        assert callable(getattr(HostTable, name)), f"'HostTable.{name}' not callable, disallow put to queue"
+        return lambda *args: q.put((name, self.did)+args)
 
     def put_addr(self, data):
         assert data[0] == Commd.PA.value

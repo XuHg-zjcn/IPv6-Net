@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ########################################################################
+import time
 import struct
 import threading
 import logging
 
+import conf
 from peer import peerdict
 from protol import Commd
 
@@ -111,6 +113,22 @@ class Procer:
         ver_ = int.from_bytes(self.data[self.i:self.i+8], 'big')
         if ver_ >= self.pg.version:
             self.pg = None
+        self.i += 8
+
+    def GT(self):
+        self.i += 1
+        if self.pg == peerdict.local:
+            t = time.time()
+            self.res.append(Commd.PT.value)
+            self.res.extend(int(t*2**24).to_bytes(8, 'big'))
+
+    def PT(self):
+        self.i += 1
+        if self.pp and self.pp != peerdict.local:
+            ts = int.from_bytes(self.data[self.i:self.i+8], 'big')/2**24
+            if abs(ts - time.time()) < conf.time_update_tolerate:
+                self.pp.last_test_recv = True
+                self.pp.inc_time(ts)
         self.i += 8
 
     def proc(self):

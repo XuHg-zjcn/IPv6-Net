@@ -22,6 +22,7 @@ import threading
 import random
 import logging
 
+import conf
 from peer import peerdict, LocalPeer
 from syncer import SyncTask
 from protol import Commd
@@ -63,13 +64,21 @@ class Tester(threading.Thread):
                 self.syncth.q.put(stask)
         else:
             s = bytearray()
-            if peer.pubkey is None:
-                s.append(Commd.GK.value)
+            if conf.test_require_time:
+                s.append(Commd.GT.value)
             s.append(Commd.PV.value)
             s.extend(peerdict.local.version.to_bytes(8, 'big'))
             s.append(Commd.InVg.value)
             s.extend(peer.version.to_bytes(8, 'big'))
             s.append(Commd.GA.value)
+            if conf.test_report_time:
+                s.append(Commd.PT.value)
+                s.extend(int(time.time()*2**24).to_bytes(8, 'big'))
+            if conf.test_require_sign:
+                s.append(Commd.GS.value)
+            if conf.test_report_sign:
+                s.append(Commd.PS.value)
+                s.extend(conf.sk.sign(bytes(s)))
             s = bytes(s)
             if peer.last_addr == 4:
                 self.sock4.sendto(s, (peer.ipv4.compressed, 4646))

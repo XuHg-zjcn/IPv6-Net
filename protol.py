@@ -35,3 +35,7 @@ class Commd(Enum):  # Params
     PV = 0x0D       # Ver
     InVg = 0x0E     # Ver
     STAT = 0x0F     #
+    GT = 0x10       #
+    PT = 0x11       # Time
+    GS = 0x12       #
+    PS = 0x13       # Sign

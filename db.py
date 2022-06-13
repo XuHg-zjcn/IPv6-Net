@@ -80,14 +80,15 @@ class HostTable(SqlTable):
         if did in self.last_mono:
             self.last_mono.pop(did)
 
-    def inc_time(self, did):
-        now = time.time()
+    def inc_time(self, did, ts=None):
+        if ts is None:
+            ts = time.time()
         tmono = time.monotonic()
         if did not in self.last_mono:
             self.last_mono[did] = tmono
             self.update_conds({'id': did},
                               {'conn_count': ('+=', 1),
-                               'conn_last': now},
+                               'conn_last': ts},
                               commit=True)
             return
         else:
@@ -95,7 +96,7 @@ class HostTable(SqlTable):
             self.last_mono[did] = tmono
             self.update_conds({'id': did},
                               {'online_sec': ('+=', delta),
-                               'conn_last': now},
+                               'conn_last': ts},
                               commit=True)
 
     def update_ipv6(self, did, ipv6, version, sign=None):

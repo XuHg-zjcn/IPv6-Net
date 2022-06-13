@@ -32,6 +32,12 @@ udata_dir = 'data'
 db_path = 'data/data.db'
 key_path = 'data/key'
 
+test_require_time = True
+test_report_time = True
+test_require_sign = False
+test_report_sign = False
+time_update_tolerate = 300
+
 os.chdir(os.path.dirname(sys.argv[0]))
 if not os.path.exists(udata_dir):
     os.makedirs(udata_dir)
