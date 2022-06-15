@@ -75,6 +75,7 @@ class Peer:
         return lambda *args: q.put((name, self.did)+args)
 
     def put_addr(self, data):
+        assert len(data) == 89
         assert data[0] == Commd.PA.value
         ver = int.from_bytes(data[1:9], 'big')
         ipv6 = ipaddress.IPv6Address(data[9:25])
@@ -88,6 +89,7 @@ class Peer:
             self.inc_time()
             if ver > self.version:
                 self.update_ipv6(ipv6, ver, sign)
+                logging.info(f'Update IPv6 {self.name} {ipv6}')
                 return True
             else:
                 return False
