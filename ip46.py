@@ -43,7 +43,7 @@ def get_local_addr():
     with os.popen('ip address show scope global primary') as p:
         res = p.read()
     spt = res.split('\n')
-    x4 = find_addr('inet', spt)
+    x4 = find_addr('inet ', spt)
     x6 = find_addr('inet6', spt)
     if x4:
         x4 = ipaddress.IPv4Address(x4)
