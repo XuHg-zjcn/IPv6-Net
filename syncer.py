@@ -35,7 +35,9 @@ class SyncTask:
         tmp.append(Commd.PK.value)
         tmp.extend(p.pubkey.to_bytes())
         tmp.append(Commd.PA.value)
+        tmp.extend(p.version.to_bytes(8, 'big'))
         tmp.extend(p.ipv6.packed)
+        p.pubkey.verify(p.addr_sign, bytes(tmp[-25:]))
         tmp.extend(p.addr_sign)
         self.m = min(m, len(peerdict.dk)-1)  # 计划发送次数
         self.count = 0                       # 已发送次数

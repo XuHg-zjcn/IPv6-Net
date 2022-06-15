@@ -60,8 +60,12 @@ class Tester(threading.Thread):
     def test(self, peer):
         if isinstance(peer, LocalPeer):
             if peer.check_update_addr():
-                stask = SyncTask(peer, m=10, knows=[peer])
-                self.syncth.q.put(stask)
+                try:
+                    stask = SyncTask(peer, m=10, knows=[peer])
+                except Exception as e:
+                    logging.error(f'start SyncTask faild, {e}')
+                else:
+                    self.syncth.q.put(stask)
         else:
             s = bytearray()
             if conf.test_require_time:
