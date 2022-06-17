@@ -133,18 +133,25 @@ class Procer:
 
     def proc(self):
         while self.i < len(self.data):
+            # 获取命令名
             try:
                 fname = Commd(self.data[self.i]).name
             except ValueError:
                 logging.error(f'unkown commd 0x{self.data[self.i]:02x}')
                 break
+            # 根据命令名找到方法的函数
             try:
                 func = getattr(self, fname)
             except AttributeError:
                 logging.error(f'not implemented commd {fname}')
                 break
-            else:
+            # 执行函数
+            try:
                 func()
+            except Exception as e:
+                logging.error(f'error during exec {fname}: {e}')
+                break
+            # 有一个环节出错就记录日志并跳出循环，保留之前的数据
         return bytes(self.res)
 
 
