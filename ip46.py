@@ -52,25 +52,28 @@ def get_local_addr():
     return x4, x6
 
 
-def a2s_4(addr):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((addr.compressed, 4646))
-    sock.settimeout(1)  # recvfrom时，在另一个线程中close后，仍然会阻塞
-    return sock         # 设置一个超时时间，每次调用recvfrom最多阻塞1s
-
-
-def a2s_6(addr):
-    sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
-    sock.bind((addr.compressed, 4646))
-    sock.settimeout(1)
-    return sock
+def addr2sock(addr, AddrFamily, try_max=None):
+    sock = socket.socket(AddrFamily, socket.SOCK_DGRAM)
+    while try_max is None or try_max > 0:
+        try:
+            sock.bind((addr.compressed, 4646))
+        except OSError:
+            time.sleep(1)
+            if try_max is not None:
+                try_max -= 1
+        else:
+            sock.settimeout(1)  # recvfrom时，在另一个线程中close后，仍然会阻塞
+            return sock         # 设置一个超时时间，每次调用recvfrom最多阻塞1s
+    else:
+        return None
 
 
 class IPState:
-    def __init__(self, a2s):
+    def __init__(self, af, try_max=60):
         self.addr = None
         self.sock = None
-        self.a2s = a2s
+        self.af = af
+        self.try_max = try_max
         self.event = threading.Event()
 
     def clear(self):
@@ -87,10 +90,15 @@ class IPState:
             if addr is not None:
                 # 延时改为1会出现OSError: [Errno 99] Cannot assign requested address
                 time.sleep(2)
-                self.addr = addr
-                self.sock = self.a2s(addr)
-                self.event.set()
-            logging.info(f'addr change {old_addr} -> {addr}')
+                self.sock = addr2sock(addr, self.af, self.try_max)
+                if self.sock:
+                    self.addr = addr
+                    self.event.set()
+                    logging.info(f'addr change {old_addr} -> {addr} sucess')
+                else:
+                    logging.error(f'addr change {old_addr} -> {addr} faild')
+            else:
+                logging.info(f'addr change {old_addr} -> {addr} cleared')
 
     def sendto(self, data, addr):
         while True:
@@ -117,8 +125,8 @@ class IPState:
 class IPMon(threading.Thread):
     def __init__(self):
         super().__init__()
-        self.stat4 = IPState(a2s_4)
-        self.stat6 = IPState(a2s_6)
+        self.stat4 = IPState(socket.AF_INET)
+        self.stat6 = IPState(socket.AF_INET6)
 
     def run(self):
         while True:
