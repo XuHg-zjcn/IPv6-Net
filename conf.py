@@ -19,6 +19,8 @@
 import os
 import sys
 import stat
+import logging
+import datetime
 
 import ed25519
 
@@ -31,6 +33,13 @@ domain_suffix = '.local'
 udata_dir = 'data'
 db_path = 'data/data.db'
 key_path = 'data/key'
+dtstr = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+logg_path = f'data/{dtstr}.log'
+
+logg_level_bkgd = logging.WARNING
+logg_level_tty = logging.DEBUG
+logg_format = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+logg_datefmt = "%Y-%m-%d %H:%M:%S"
 
 test_require_time = True
 test_report_time = True

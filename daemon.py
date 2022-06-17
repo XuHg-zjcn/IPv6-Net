@@ -20,6 +20,7 @@ import os
 import socket
 import logging
 
+import conf
 import ip46
 import server
 import tester
@@ -28,8 +29,12 @@ import peer
 
 
 if __name__ == '__main__':
-    if os.isatty(1):
-        logging.basicConfig(level=logging.DEBUG)
+    logg_level = conf.logg_level_tty if os.isatty(1) else conf.logg_level_bkgd
+    logg_filename = None if os.isatty(1) else conf.logg_path
+    logging.basicConfig(filename=logg_filename,
+                        format=conf.logg_format,
+                        datefmt=conf.logg_datefmt,
+                        level=logg_level)
     ipmon = ip46.IPMon()
     ipmon.start()
     Server4 = server.Server(ipmon.stat4, peer.peerdict.find_v4)
