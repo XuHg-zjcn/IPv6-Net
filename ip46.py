@@ -22,7 +22,6 @@ import socket
 import logging
 import threading
 import ipaddress
-import netifaces
 
 
 LANNets = [

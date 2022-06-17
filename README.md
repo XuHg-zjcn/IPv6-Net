@@ -12,7 +12,7 @@
 具体协议请看[docs/spec.md](docs/spec.md)  
 
 # 安装方法
-1. 安装依赖库`sudo pip3 install prettytable ed25519 netifaces`(root用户安装)
+1. 安装依赖库`sudo pip3 install prettytable ed25519`(root用户安装)
 1. 运行`./cli.py`添加节点
 1. 运行`sudo ./daemon.py`进行测试
 1. 添加开机启动
