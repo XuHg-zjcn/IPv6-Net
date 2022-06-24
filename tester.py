@@ -91,7 +91,7 @@ class Tester(threading.Thread):
                 self.sock6.sendto(s, (peer.ipv6.compressed, 4646))
                 logging.info(f'test {peer.name} ({peer.ipv6.compressed})')
             else:
-                raise ValueError(f'peer.last_addr = {peer.last_addr}')
+                logging.warning(f'peer.last_addr = {peer.last_addr}')
 
     def test_all(self):
         for T in self.tasks:
@@ -105,7 +105,10 @@ class Tester(threading.Thread):
             test = self.tasks.pop(0)
             if not test.peer.last_test_recv:
                 test.peer.disconn()
-                test.peer.last_addr = 6 if test.peer.last_addr == 4 else 4
+                if test.peer.last_addr == 4 and test.peer.ipv6:
+                    test.peer.last_addr = 6
+                if test.peer.last_addr == 6 and test.peer.ipv4:
+                    test.peer.last_addr = 4
             test.peer.last_test_recv = False
             dt = test.t - time.monotonic()
             if dt > 0:

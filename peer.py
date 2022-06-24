@@ -52,7 +52,13 @@ class Peer:
         self.ipv6 = ipv6
         self.addr_sign = addr_sign or bytes(64)
         self.period = period
-        self.last_addr = 6
+        if ipv6:
+            last_addr = 6
+        elif ipv4:
+            last_addr = 4
+        else:
+            last_addr = None
+        self.last_addr = last_addr
         self.last_test_recv = False
 
     def update_hosts(self, addnew=False):
