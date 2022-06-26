@@ -63,7 +63,7 @@ class Tester(threading.Thread):
                 try:
                     stask = SyncTask(peer, m=10, knows=[peer])
                 except Exception as e:
-                    logging.error(f'start SyncTask faild, {e}')
+                    logging.exception(f'start SyncTask faild, {e}')
                 else:
                     self.syncth.q.put(stask)
         else:

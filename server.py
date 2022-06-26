@@ -149,7 +149,7 @@ class Procer:
             try:
                 func()
             except Exception as e:
-                logging.error(f'error during exec {fname}: {e}')
+                logging.exception(f'exception during exec {fname}: {e}')
                 break
             # 有一个环节出错就记录日志并跳出循环，保留之前的数据
         return bytes(self.res)
