@@ -85,6 +85,8 @@ class Procer:
         self.i += 32
         if p is None:
             self.res.append(Commd.NF.value)
+        else:
+            p.last_test_recv = True
         self.pg = self.pp = p
 
     def GI(self):
@@ -173,6 +175,8 @@ class Server(threading.Thread):
             pp = self.find_p(addr[0])
             if pp is None:
                 logging.info(f"can't find host by IP address {addr[:2]}")
+            else:
+                pp.last_test_recv = True
 
             res = Procer(data, pp).proc()
 

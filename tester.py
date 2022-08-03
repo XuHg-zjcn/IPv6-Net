@@ -107,7 +107,7 @@ class Tester(threading.Thread):
                 test.peer.disconn()
                 if test.peer.last_addr == 4 and test.peer.ipv6:
                     test.peer.last_addr = 6
-                if test.peer.last_addr == 6 and test.peer.ipv4:
+                elif test.peer.last_addr == 6 and test.peer.ipv4:
                     test.peer.last_addr = 4
             test.peer.last_test_recv = False
             dt = test.t - time.monotonic()
