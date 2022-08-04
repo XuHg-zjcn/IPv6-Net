@@ -46,6 +46,21 @@ def ts2str(x):
         x = datetime.datetime.fromtimestamp(x)
         return x.strftime("%Y-%m-%d %H:%M:%S")
 
+def dt2str(x):
+    if x is None:
+        return '0'
+    else:
+        x = datetime.timedelta(seconds=x)
+        days = x.days
+        secs = x.seconds
+        if x:
+            res = ''
+            if days > 0:
+                res += f'{days}d '
+            res += f'{secs//3600:2d}:{secs//60%60:02d}'
+            return res
+        else:
+            return '0'
 
 def isExists(name):
     res = htab.get_conds_execute(cond_dict={'name': name})
@@ -73,7 +88,7 @@ def cli():
         fields = ['name', 'ipv4', 'ipv6', 'online_sec',
                   'conn_last', 'conn_count']
         res = htab.get_conds_execute(fields=fields)
-        res = map(lambda x: (*x[:3], int(x[3]),
+        res = map(lambda x: (*x[:3], dt2str(x[3]),
                              ts2str(x[4]), int(x[5])), res)
         tab = PrettyTable()
         tab.add_column('name', [], align='l')
