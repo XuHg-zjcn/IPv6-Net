@@ -20,9 +20,10 @@ import time
 import struct
 import threading
 import logging
+import ed25519
 
 import conf
-from peer import peerdict
+from peer import peerdict, q
 from protol import Commd
 
 
@@ -81,10 +82,17 @@ class Procer:
 
     def PK(self):
         self.i += 1
-        p = peerdict.dk.get(self.data[self.i:self.i+32])
+        x = self.data[self.i:self.i+32]
+        p = peerdict.dk.get(x)
         self.i += 32
         if p is None:
-            self.res.append(Commd.NF.value)
+            if self.pp and self.pp.pubkey is None:
+                q.put(('update_conds', {'id':self.pp.did}, {'pubkey':x}))
+                self.pp.pubkey = ed25519.VerifyingKey(x)
+                strkey = self.pp.pubkey.to_ascii(encoding='base64')
+                logging.info(f'get {self.pp.name} pubkey {strkey}')
+            else:
+                self.res.append(Commd.NF.value)
         else:
             p.last_test_recv = True
         self.pg = self.pp = p

@@ -73,7 +73,7 @@ def cli():
     if s == '1':
         name = input('请输入设备名称:')
         ipv4 = input('请输入局域网IPv4:')
-        pubkey = input('请输入公钥base64:')
+        pubkey = input('请输入公钥base64(留空自动获取):')
         period = input('请输入测试周期(单位秒,默认60秒):')
         try:
             period = float(period)

@@ -52,7 +52,7 @@ class Tester(threading.Thread):
         self.syncth = syncth
 
     def load_peer(self, pdx):
-        for p in pdx.values():
+        for p in pdx:
             test = Test(time.monotonic() + p.period*random.random(), p)
             self.tasks.append(test)
         self.tasks.sort(key=lambda x: x.t)
@@ -70,6 +70,8 @@ class Tester(threading.Thread):
             s = bytearray()
             if conf.test_require_time:
                 s.append(Commd.GT.value)
+            if peer.pubkey is None:
+                s.append(Commd.GK.value)
             s.append(Commd.PV.value)
             s.extend(peerdict.local.version.to_bytes(8, 'big'))
             s.append(Commd.InVg.value)
@@ -99,7 +101,7 @@ class Tester(threading.Thread):
 
     def run(self):
         time.sleep(1)  # 等待数据库加载完成
-        self.load_peer(peerdict.dk)
+        self.load_peer(peerdict.lst)
         self.test_all()
         while True:
             test = self.tasks.pop(0)

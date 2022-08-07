@@ -107,7 +107,14 @@ class Peer:
         # TODO: 待实现
 
     def __lt__(self, other):
-        return self.pubkey.vk_s < other.pubkey.vk_s
+        if self.pubkey and other.pubkey:
+            return self.pubkey.vk_s < other.pubkey.vk_s
+        elif self.name and other.name:
+            return self.name < other.name
+        elif self.ipv4 and other.ipv4:
+            return self.ipv4 < other.ipv4
+        else:
+            raise ValueError("can't compare")
 
 
 class LocalPeer(Peer):
@@ -158,9 +165,12 @@ class PeerDict(threading.Thread):
             return self.find_v6(addr)
 
     def add(self, peer):
-        self.dk[peer.pubkey.to_bytes()] = peer
-        self.d6[peer.ipv6] = peer
-        self.d4[peer.ipv4] = peer
+        if peer.pubkey:
+            self.dk[peer.pubkey.to_bytes()] = peer
+        if peer.ipv6:
+            self.d6[peer.ipv6] = peer
+        if peer.ipv4:
+            self.d4[peer.ipv4] = peer
         bisect.insort(self.lst, peer)
 
     def load_db(self):
