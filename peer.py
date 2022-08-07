@@ -67,7 +67,8 @@ class Peer:
         hosts.flush()
 
     def update_ipv6(self, ipv6, version, sign):
-        peerdict.d6.pop(self.ipv6)
+        if self.ipv6 and self.ipv6 in peerdict.d6:
+            peerdict.d6.pop(self.ipv6)
         self.ipv6 = ipv6
         self.version = version
         self.addr_sign = sign
