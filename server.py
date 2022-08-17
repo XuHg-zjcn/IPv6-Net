@@ -57,11 +57,11 @@ class Procer:
         self.i += 1
         if not self.pg:
             return
+        if self.pg == peerdict.local:
+            self.pg.check_update_addr()
         self.res.append(Commd.PA.value)
         self.res.extend(struct.pack('>Q', self.pg.version))
         # TODO: 处理无法获取IPv6地址情况
-        if self.pg == peerdict.local:
-            self.pg.check_update_addr()
         self.res.extend(self.pg.ipv6.packed)
         if self.pg.addr_sign:
             self.res.extend(self.pg.addr_sign)
