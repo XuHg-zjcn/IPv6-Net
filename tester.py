@@ -105,7 +105,8 @@ class Tester(threading.Thread):
         self.test_all()
         while True:
             test = self.tasks.pop(0)
-            if not test.peer.last_test_recv:
+            if not isinstance(test.peer, LocalPeer) and \
+               not test.peer.last_test_recv:
                 test.peer.disconn()
                 if test.peer.last_addr == 4 and test.peer.ipv6:
                     test.peer.last_addr = 6
