@@ -105,15 +105,23 @@ def cli():
         if not isExists(name):
             print('该名称的设备不存在')
             return
-        ipv4 = input('请输入局域网IPv4:')
-        update_dict = {'ipv4': ipv4}
-        period = input('请输入测试周期(单位秒,默认不改变):')
+        ipv4 = input('请输入局域网IPv4(留空不改变):')
+        ipv6 = input('请输入IPv6(留空不改变):')
+        update_dict = {}
+        if ipv4:
+            update_dict['ipv4'] = ipv4
+        if ipv6:
+            update_dict['ipv6'] = ipv6
+        period = input('请输入测试周期(单位秒,留空不改变):')
         try:
             period = float(period)
         except Exception:
             pass
         else:
             update_dict['test_period'] = period
+        if len(update_dict) == 0:
+            print('没有改变')
+            return
         htab.update_conds(cond_dict={'name': name},
                           update_dict=update_dict,
                           commit=True)
