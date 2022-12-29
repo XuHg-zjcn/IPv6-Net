@@ -19,6 +19,7 @@
 import datetime
 import sys
 import sqlite3
+import ipaddress
 
 from prettytable import PrettyTable
 import ed25519
@@ -72,18 +73,21 @@ def cli():
     s = input('请选择[1.添加 2.查看 3.修改 4.删除 v.版本]:')
     if s == '1':
         name = input('请输入设备名称:')
-        ipv4 = input('请输入局域网IPv4:')
-        pubkey = input('请输入公钥base64(留空自动获取):')
-        period = input('请输入测试周期(单位秒,默认60秒):')
+        ipv4_ = input('请输入局域网IPv4:')
+        ipv6_ = input('请输入公网IPv6:')
+        pubkey_ = input('请输入公钥base64(留空自动获取,但不安全):')
+        period_ = input('请输入测试周期(单位秒,默认60秒):')
+        ipv4 = ipaddress.IPv4Address(ipv4_)
+        ipv6 = ipaddress.IPv6Address(ipv6_)
         try:
-            period = float(period)
+            period = float(period_)
         except Exception:
             period = 60.0
-        if len(pubkey) == 43:
-            pubkey = ed25519.from_ascii(pubkey)
-        else:
+        try:
+            pubkey = ed25519.keys.VerifyingKey(ed25519.from_ascii(pubkey_))
+        except Exception:
             pubkey = None
-        htab.add_dev(name, ipv4, pubkey, period)
+        htab.add_dev(name, ipv4, ipv6, pubkey, period)
     elif s == '2':
         fields = ['name', 'ipv4', 'ipv6', 'online_sec',
                   'conn_last', 'conn_count']

@@ -18,6 +18,9 @@
 ########################################################################
 import time
 import datetime
+import ipaddress
+
+import ed25519
 
 from sqltable import SqlTable
 import conf
@@ -62,19 +65,28 @@ class HostTable(SqlTable):
                         commit=True)
         self.last_mono = {}
 
-    def add_dev(self, name, ipv4, pubkey=None, period=60.0):
-        self.insert({'name': name,
-                     'pubkey': pubkey,
-                     'ipv4': ipv4,
-                     'online_sec': 0.0,
-                     'conn_count': 0,
-                     'update_count': 0,
-                     'update_last': datetime.datetime.now(),
-                     'update_count': 0,
-                     'test_period': period,
-                     'version': 0,
-                     'level': 0},
-                    commit=True)
+    def add_dev(self, name, ipv4, ipv6, pubkey=None, period=60.0):
+        assert isinstance(name, str)
+        assert isinstance(period, float)
+        insert_dict = {'name': name,
+                       'online_sec': 0.0,
+                       'conn_count': 0,
+                       'update_count': 0,
+                       'update_last': datetime.datetime.now(),
+                       'update_count': 0,
+                       'test_period': period,
+                       'version': 0,
+                       'level': 0}
+        if ipv4:
+            assert isinstance(ipv4, ipaddress.IPv4Address)
+            insert_dict['ipv4'] = ipv4.compressed
+        if ipv6:
+            assert isinstance(ipv6, ipaddress.IPv6Address)
+            insert_dict['ipv6'] = ipv6.compressed
+        if pubkey:
+            assert isinstance(pubkey, ed25519.keys.VerifyingKey)
+            insert_dict['pubkey'] = pubkey.to_bytes()
+        self.insert(insert_dict, commit=True)
 
     def disconn(self, did):
         if did in self.last_mono:
