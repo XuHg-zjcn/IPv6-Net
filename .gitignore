@@ -3,6 +3,7 @@ __pycache__
 
 # user data
 *.db
+/data
 
 # vim
 *.swp
