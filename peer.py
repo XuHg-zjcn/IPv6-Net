@@ -90,20 +90,23 @@ class Peer:
         ver = int.from_bytes(data[1:9], 'big')
         ipv6 = ipaddress.IPv6Address(data[9:25])
         sign = data[25:89]
-        try:
-            self.pubkey.verify(sign, data[:25])
-        except ed25519.BadSignatureError:
-            logging.warning(f'sign error {self.name}')
-            return None
-        else:
-            self.inc_time()
-            if ver > self.version:
-                self.update_ipv6(ipv6, ver, sign)
-                logging.info(f'Update IPv6 {self.name} {ipv6} ver{self.version}->{ver}')
-                return True
+        if self.pubkey:
+            try:
+                self.pubkey.verify(sign, data[:25])
+            except ed25519.BadSignatureError:
+                logging.warning(f'sign error {self.name}')
+                verify = False
             else:
-                logging.warning(f'Refuse update IPv6 {self.name} {ipv6} ver{self.version}->{ver}')
-                return False
+                verify = True
+                self.inc_time()
+                if ver > self.version:
+                    self.update_ipv6(ipv6, ver, sign)
+                    logging.info(f'Update IPv6 {self.name} {ipv6} ver{self.version}->{ver}')
+                else:
+                    logging.warning(f'Refuse update IPv6 {self.name} {ipv6} ver{self.version}->{ver}')
+        else:
+            verify = None
+        return verify, ver, ipv6
 
     def put_pubkey(self, data):
         assert len(data) == 33

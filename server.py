@@ -28,17 +28,15 @@ from protol import Commd
 
 
 class Procer:
-    def __init__(self, data, pp):
+    def __init__(self, data, pp, addr):
         self.data = data
+        self.addr = addr
         self.i = 0
         self.res = bytearray()
         # 没有使用TG指令指定目标时，设置默认操作主机
         self.pg = peerdict.local        # Gx指令操作的主机，默认本机
         self.pp = pp                    # Px指令操作的主机，默认对方
-        if not pp and data[0] != Commd.PK.value:
-            # 不知道对方目标，请求公钥和地址
-            self.res.append(Commd.GK.value)
-            self.res.append(Commd.GA.value)
+        self.pp0 = pp                   # 发送节点
 
     def GN(self):
         self.i += 1
@@ -70,7 +68,10 @@ class Procer:
 
     def PA(self):
         if self.pp and self.pp != peerdict.local:
-            self.pp.put_addr(self.data[self.i:self.i+89])
+            ver_old = self.pp.version
+            verify, ver, ipv6 = self.pp.put_addr(self.data[self.i:self.i+89])
+            if self.pp0 is None and verify and ver >= ver_old and ipv6 == self.addr[0]:
+                self.pp0 = self.pp  # 发送节点已确定
         self.i += 89
 
     def GK(self):
@@ -162,6 +163,13 @@ class Procer:
                 logging.exception(f'exception during exec {fname}: {e}')
                 break
             # 有一个环节出错就记录日志并跳出循环，保留之前的数据
+        if not self.pp0 and self.data[0] != Commd.PK.value:
+            # 还不知道对方节点，请求公钥和带签名的地址
+            self.res.insert(0, Commd.GK.value)
+            self.res.insert(1, Commd.GA.value)
+        if self.pp0 and self.pp0.pubkey is None:
+            # 知道对方节点，但不知道对方公钥，请求公钥
+            self.res.insert(0, Commd.GK.value)
         return bytes(self.res)
 
 
@@ -186,7 +194,7 @@ class Server(threading.Thread):
             else:
                 pp.last_test_recv = True
 
-            res = Procer(data, pp).proc()
+            res = Procer(data, pp, addr).proc()
 
             if len(res) > 0:
                 self.sock.sendto(res, addr[:2])
