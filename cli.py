@@ -73,12 +73,18 @@ def cli():
     s = input('请选择[1.添加 2.查看 3.修改 4.删除 v.版本]:')
     if s == '1':
         name = input('请输入设备名称:')
-        ipv4_ = input('请输入局域网IPv4:')
-        ipv6_ = input('请输入公网IPv6:')
+        ipv4_ = input('请输入局域网IPv4(不同局域网可以留空):')
+        ipv6_ = input('请输入公网IPv6(同一局域网可以留空):')
         pubkey_ = input('请输入公钥base64(留空自动获取,但不安全):')
         period_ = input('请输入测试周期(单位秒,默认60秒):')
-        ipv4 = ipaddress.IPv4Address(ipv4_)
-        ipv6 = ipaddress.IPv6Address(ipv6_)
+        try:
+            ipv4 = ipaddress.IPv4Address(ipv4_)
+        except Exception:
+            ipv4 = None
+        try:
+            ipv6 = ipaddress.IPv6Address(ipv6_)
+        except Exception:
+            ipv6 = None
         try:
             period = float(period_)
         except Exception:

@@ -39,17 +39,20 @@ class Peer:
     def __init__(self, name, pubkey, did,
                  version, ipv4, ipv6=None, addr_sign=None, period=60.0):
         self.name = name
-        if pubkey is not None:
-            pubkey = ed25519.VerifyingKey(pubkey)
-        self.pubkey = pubkey
+        try:
+            self.pubkey = ed25519.VerifyingKey(pubkey)
+        except Exception:
+            self.pubkey = None
         self.did = did
         self.version = version
-        if ipv6 is not None:
-            ipv6 = ipaddress.IPv6Address(ipv6)
-        if ipv4 is not None:
-            ipv4 = ipaddress.IPv4Address(ipv4)
-        self.ipv4 = ipv4
-        self.ipv6 = ipv6
+        try:
+            self.ipv6 = ipaddress.IPv6Address(ipv6)
+        except Exception:
+            self.ipv6 = None
+        try:
+            self.ipv4 = ipaddress.IPv4Address(ipv4)
+        except Exception:
+            self.ipv4 = None
         self.addr_sign = addr_sign or bytes(64)
         self.period = period
         if ipv6:
