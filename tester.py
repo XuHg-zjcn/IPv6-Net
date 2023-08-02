@@ -87,11 +87,13 @@ class Tester(threading.Thread):
                 s.extend(conf.sk.sign(bytes(s)))
             s = bytes(s)
             if peer.last_addr == 4:
-                self.sock4.sendto(s, (peer.ipv4.compressed, 4646))
-                logging.info(f'test {peer.name} ({peer.ipv4.compressed})')
+                addr_port = (peer.ipv4.compressed, 4646)
+                self.sock4.sendto(s, addr_port)
+                logging.info(f'test {peer.name} {addr_port}')
             elif peer.last_addr == 6:
-                self.sock6.sendto(s, (peer.ipv6.compressed, 4646))
-                logging.info(f'test {peer.name} ({peer.ipv6.compressed})')
+                addr_port = (peer.ipv6.compressed, 4646)
+                self.sock6.sendto(s, addr_port)
+                logging.info(f'test {peer.name} {addr_port}')
             else:
                 logging.warning(f'peer.last_addr = {peer.last_addr}')
 

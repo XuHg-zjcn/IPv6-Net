@@ -112,11 +112,13 @@ class SyncThread(Thread):
             if target is None:
                 continue
             if target.last_addr == 4:
-                self.sock4.sendto(task.data, (target.ipv4.compressed, 4646))
-                logging.info(f'sync {task.peer.name} -> {target.name} ({target.ipv4.compressed})')
+                addr_port = (target.ipv4.compressed, 4646)
+                self.sock4.sendto(task.data, addr_port)
+                logging.info(f'sync {task.peer.name} -> {target.name} {addr_port}')
             elif target.last_addr == 6:
-                self.sock6.sendto(task.data, (target.ipv6.compressed, 4646))
-                logging.info(f'sync {task.peer.name} -> {target.name} ({target.ipv6.compressed})')
+                addr_port = (target.ipv6.compressed, 4646)
+                self.sock6.sendto(task.data, addr_port)
+                logging.info(f'sync {task.peer.name} -> {target.name} {addr_port}')
             else:
                 raise ValueError(f'target.last_addr = {target.last_addr}')
             task.count += 1

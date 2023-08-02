@@ -190,14 +190,15 @@ class Server(threading.Thread):
             # TODO: 处理找不到默认pp的情况
             pp = self.find_p(addr[0])
             if pp is None:
-                logging.info(f"can't find host by IP address {addr[:2]}")
+                pp_name = 'Unknown'
             else:
                 pp.last_test_recv = True
+                pp_name = pp.name
+            logging.debug(f'from {pp_name} {addr[:2]}')
+            logging.debug(f'recv {data.hex()}')
 
             res = Procer(data, pp, addr).proc()
 
             if len(res) > 0:
                 self.sock.sendto(res, addr[:2])
-            logging.debug(f'from {addr[:2]}\n'
-                          f'recv {data.hex()}\n'
-                          f'resp {res.hex()}')
+            logging.debug(f'resp {res.hex()}')

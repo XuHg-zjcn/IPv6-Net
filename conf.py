@@ -38,7 +38,7 @@ logg_path = f'data/{dtstr}.log'
 
 logg_level_bkgd = logging.WARNING
 logg_level_tty = logging.DEBUG
-logg_format = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+logg_format = "%(asctime)s.%(msecs)03d:%(levelname)s:%(name)s:%(message)s"
 logg_datefmt = "%Y-%m-%d %H:%M:%S"
 
 test_require_time = True

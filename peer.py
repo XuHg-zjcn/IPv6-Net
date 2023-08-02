@@ -100,8 +100,8 @@ class Peer:
                 verify = True
                 self.inc_time()
                 if ver > self.version:
-                    self.update_ipv6(ipv6, ver, sign)
                     logging.info(f'Update IPv6 {self.name} {ipv6} ver{self.version}->{ver}')
+                    self.update_ipv6(ipv6, ver, sign)
                 else:
                     logging.warning(f'Refuse update IPv6 {self.name} {ipv6} ver{self.version}->{ver}')
         else:
