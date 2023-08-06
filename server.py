@@ -88,7 +88,7 @@ class Procer:
         self.i += 32
         if p is None:
             if self.pp and self.pp.pubkey is None:
-                q.put(('update_conds', {'id':self.pp.did}, {'pubkey':x}))
+                q.put((peerdict.htab.update_conds, None, {'id':self.pp.did}, {'pubkey':x}))
                 self.pp.pubkey = ed25519.VerifyingKey(x)
                 strkey = self.pp.pubkey.to_ascii(encoding='base64')
                 logging.info(f'get {self.pp.name} pubkey {strkey}')

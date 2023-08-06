@@ -39,3 +39,5 @@ class Commd(Enum):  # Params
     PT = 0x11       # Time
     GS = 0x12       #
     PS = 0x13       # Sign
+    ADDEXC = 0x14   # Pub
+    RMEXC = 0x15    # Pub

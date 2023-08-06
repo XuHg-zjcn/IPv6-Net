@@ -30,7 +30,7 @@ from protol import Commd
 
 
 class SyncTask:
-    def __init__(self, p, m=3, delay=1, rdelay=0.2, knows=None):
+    def __init__(self, p, m=3, delay=1, rdelay=0.2, musts=None, knows=None):
         tmp = bytearray()
         tmp.append(Commd.PK.value)
         tmp.extend(p.pubkey.to_bytes())
@@ -50,6 +50,7 @@ class SyncTask:
             self.knows = sorted(map(lambda x:peerdict.lst.index(x), knows))
         else:
             self.knows = []
+        self.musts = musts
         self.next2()
 
     def __lt__(self, other):
@@ -63,6 +64,8 @@ class SyncTask:
 
     def choice_target(self):
         # TODO: peerdict节点变动时更新self.knows
+        if self.musts:
+            return peerdict.did[self.musts.pop()]
         if len(self.knows) >= len(peerdict.lst):
             return None
         i0 = i1 = random.randrange(len(peerdict.lst) - len(self.knows))
@@ -124,3 +127,11 @@ class SyncThread(Thread):
             task.count += 1
             if task.count < task.m:
                 bisect.insort(self.tasks, task)
+
+    def create_task(self, *args, **kwargs):
+        try:
+            stask = SyncTask(*args, **kwargs)
+        except Exception as e:
+            logging.exception(f'start SyncTask faild, {e}')
+        else:
+            self.q.put(stask)

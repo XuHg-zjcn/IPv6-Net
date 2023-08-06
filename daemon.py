@@ -37,11 +37,14 @@ if __name__ == '__main__':
                         level=logg_level)
     ipmon = ip46.IPMon()
     ipmon.start()
+    peer.Peer.sock4 = ipmon.stat4
+    peer.Peer.sock6 = ipmon.stat6
+    syncth = syncer.SyncThread(ipmon.stat4, ipmon.stat6)
+    syncth.start()
+    peer.Peer.syncth = syncth
     Server4 = server.Server(ipmon.stat4, peer.peerdict.find_v4)
     Server4.start()
     Server6 = server.Server(ipmon.stat6, peer.peerdict.find_v6)
     Server6.start()
-    syncth = syncer.SyncThread(ipmon.stat4, ipmon.stat6)
-    syncth.start()
     Tester = tester.Tester(ipmon.stat4, ipmon.stat6, syncth)
     Tester.start()
