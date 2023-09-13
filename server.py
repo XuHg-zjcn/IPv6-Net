@@ -72,6 +72,8 @@ class Procer:
             verify, ver, ipv6 = self.pp.put_addr(self.data[self.i:self.i+89])
             if self.pp0 is None and verify and ver >= ver_old and ipv6 == self.addr[0]:
                 self.pp0 = self.pp  # 发送节点已确定
+            elif self.pp and self.pp0 and self.pp.did != self.pp0.did:
+                q.put((peerdict.etab.set_peer_ver, None, self.pp.did, self.pp0.did, ver))
         self.i += 89
 
     def GK(self):
@@ -141,6 +143,40 @@ class Procer:
                 self.pp.last_test_recv = True
                 self.pp.inc_time(ts)
         self.i += 8
+
+    def ADDEXC(self):
+        i = self.i
+        self.i += 33
+        if self.pp is None:
+            return
+        info_pk = self.data[i+1:i+33]
+        if info_pk not in peerdict.dk:
+            return
+        info_id = peerdict.dk[info_pk].did
+        peer_id = self.pp0.did
+        if info_id is None or peer_id is None:
+            return
+        info_name = peerdict.dk[info_pk].name
+        peer_name = self.pp0.name
+        logging.info(f'ADDEXC info:{info_name}, peer:{peer_name}')
+        q.put((peerdict.etab.insert, None, {'info_id':info_id, 'peer_id':peer_id}))
+
+    def RMEXC(self):
+        i = self.i
+        self.i += 33
+        if self.pp is None:
+            return
+        info_pk = self.data[i+1:i+33]
+        if info_pk not in peerdict.dk:
+            return
+        info_id = peerdict.dk[info_pk].did
+        peer_id = self.pp0.did
+        if info_id is None and peer_id is None:
+            return
+        info_name = peerdict.dk[info_pk].name
+        peer_name = self.pp0.name
+        logging.info(f'RMEXC info:{info_name}, peer:{peer_name}')
+        q.put((peerdict.etab.delete, None, {'info_id':info_id, 'peer_id':peer_id}))
 
     def proc(self):
         while self.i < len(self.data):
