@@ -15,12 +15,24 @@
 1. 添加开机启动  
    把*files/ipv6netd*文件中的`WORKDIR`改为您的安装目录
    ```bash
-   sudo cp files/ipv6netd /etc/init.d  #复制启动脚本
-   sudo update-rc.d ipv6netd defaults  #更新自动启动
+   sudo cp files/ipv6netd.service /etc/systemctl/system  #复制启动脚本
+   sudo systemctl daemon-reload                          #重新加载daemon
+   sudo systemctl start ipv6netd                         #现在开启服务
+   sudo systemctl enable ipv6netd                        #启用开机启动
    ```
    下次开机就能在后台自动启动了
-
-写入系统hosts需要root权限，如果不需要写入，可以将*conf.py*中`hosts_file`设置为其他路径。  
+1. 配置用户和组  
+   为了安全，不建议用root用户运行此程序来写入`/etc/hosts`文件，
+   如果不需要写入`/etc/hosts`，可以将*conf.py*中`hosts_file`设置为其他路径。  
+   以下是创建一个专用用户给程序使用，并且能修改hosts的方法：
+   ```bash
+   sudo useradd --no-user-group -s /sbin/nologin ipv6net  #创建ipv6net用户
+   sudo groupadd hosts                                    #使用组，方便多个程序操作hosts文件
+   sudo gpasswd -a ipv6net hosts                          #将ipv6net用户添加到hosts组
+   sudo chgrp hosts /etc/hosts                            #将hosts文件的组设置为hosts组
+   sudo chmod +060 /etc/hosts                             #给文件的组添加权限
+   #也可以使用`setfacl -m g:hosts:rw /etc/hosts`允许hosts组操作此文件
+   ```
 
 # 使用方法
 1. 在至少两台机器上安装该软件

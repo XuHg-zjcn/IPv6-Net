@@ -1,0 +1,12 @@
+[Unit]
+Description=ipv6netd
+After=network.target
+
+[Service]
+WorkingDirectory=/mnt/2thdd-btrfs/program/network/ipv6net
+Type=simple
+User=ipv6net
+ExecStart=/mnt/2thdd-btrfs/program/network/ipv6net/daemon.py
+
+[Install]
+WantedBy=multi-user.target
