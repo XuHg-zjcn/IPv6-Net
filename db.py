@@ -20,6 +20,7 @@ import time
 import datetime
 import ipaddress
 
+from hashlib import sha256
 import ed25519
 
 from sqltable import SqlTable
@@ -42,7 +43,11 @@ class HostTable(SqlTable):
         ("update_count", "INTEGER"),  # 更新次数
         ("test_period", "REAL"),      # 测试周期
         ("version", "INTEGER"),       # 版本
-        ("level", "INTEGER")          # 等级
+        ("level", "INTEGER"),         # 等级
+        ("lst_ver", "INTEGER"),       # 交换列表版本
+        ("lst_date", "INTEGER"),      # 交换列表日期
+        ("lst_hash", "BLOB"),         # 交换列表哈希
+        ("lst_notify", "BOOL"),       # 是否需要通知对方更新交换列表
     ]
     # TODO: 保存对方知道自己的版本
 
@@ -120,3 +125,57 @@ class HostTable(SqlTable):
                            'version': version,
                            'addr_sign': sign},
                           commit=True)
+
+class ExchangeTable(SqlTable):
+    table_name = 'exchange_table'
+    name2dtype = [
+        ('info_id', 'INTEGER'),   # 待交换信息的节点ID
+        ('peer_id', 'INTEGER'),   # 交换对方的节点ID
+        ('peer_ver', 'INTEGER'),  # 已知交换对方的版本, 空值表示待通知添加, -1待删除
+    ]
+
+    def get_listhash(peer_id):
+        h = sha256()
+        cur = self.conn.cursor()
+        res = cur.execute('SELECT pubkey FROM host_table '
+                          f'WHEN id IN (SELECT info_id FROM exchange_table WHERE peer_id={peer_id}) '
+                          'ORDER BY pubkey ASC')
+        for pubkey in res:
+            h.update(pubkey)
+        return h.digest()
+
+    def get_notifyinfo(self, peer_id):
+        hlist = sha256()
+        hinfo = sha256()
+        cur = self.conn.cursor()
+        res = cur.execute('SELECT pubkey, version, ipv6, addr_sign, peer_ver '
+                          'FROM exchange_table INNER JOIN host_table '
+                          'ON host_table.id=exchange_table.info_id '
+                          'WHERE peer_id=? '
+                          'ORDER BY pubkey ASC',
+                          peer_id)
+        addrm = []
+        update = []
+        for pubkey, version, ipv6, addr_sign, peer_ver in res:
+            if peer_ver < 0:
+                addrm.append(bytes([Commd.RMEXC.value]) + pubkey)
+                continue
+            if peer_ver is None:
+                addrm.append(bytes([Commd.ADDEXC.value]) + pubkey)
+            info = bytes([Commd.PK.value]) + pubkey \
+                   + bytes([Commd.PA.value]) + version.to_bytes(8, 'big') + ipaddress.IPv6Address(ipv6).packed
+            hlist.update(pubkey)
+            hinfo.update(info)
+            if peer_ver is None or peer_ver < version:
+                update.append(info)
+        return b''.join(addrm) + b''.join(update)
+
+    def set_update(self, info_id):
+        cur = self.conn.cursor()
+        res = cur.execute('UPDATE host_table SET lst_notify=1 '
+                          f'WHERE id IN (SELECT peer_id FROM exchange_table WHERE info_id={info_id})')
+        peers = self.get_conds_execute(cond_dict={'info_id':info_id}, fields='peer_id')
+        return list(peers)
+
+    def set_peer_ver(self, info_id, peer_id, peer_ver):
+        self.update_conds({'info_id':info_id, 'peer_id':peer_id}, {'peer_ver':peer_ver})

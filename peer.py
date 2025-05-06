@@ -27,7 +27,7 @@ import logging
 import ip46
 import conf
 from hosts import Hosts
-from db import HostTable
+from db import HostTable, ExchangeTable
 from protol import Commd
 
 
@@ -36,6 +36,9 @@ q = queue.Queue()
 
 
 class Peer:
+    sock4 = None
+    sock6 = None
+    syncth = None
     def __init__(self, name, pubkey, did,
                  version, ipv4, ipv6=None, addr_sign=None, period=60.0):
         self.name = name
@@ -77,12 +80,12 @@ class Peer:
         self.addr_sign = sign
         peerdict.d6[ipv6] = self
         self.update_hosts()
-        q.put(('update_ipv6', self.did, ipv6, version, sign))
+        q.put((peerdict.htab.update_ipv6, None, self.did, ipv6, version, sign))
 
     def __getattr__(self, name):
         assert hasattr(HostTable, name) , f"'HostTable' has no attribute '{name}', disallow put to queue"
         assert callable(getattr(HostTable, name)), f"'HostTable.{name}' not callable, disallow put to queue"
-        return lambda *args: q.put((name, self.did)+args)
+        return lambda *args: q.put((getattr(peerdict.htab, name), None, self.did)+args)
 
     def put_addr(self, data):
         assert len(data) == 89
@@ -102,6 +105,7 @@ class Peer:
                 if ver > self.version:
                     logging.info(f'Update IPv6 {self.name} {ipv6} ver{self.version}->{ver}')
                     self.update_ipv6(ipv6, ver, sign)
+                    self.updated()
                 else:
                     logging.warning(f'Refuse update IPv6 {self.name} {ipv6} ver{self.version}->{ver}')
         else:
@@ -123,6 +127,23 @@ class Peer:
             return self.ipv4 < other.ipv4
         else:
             raise ValueError("can't compare")
+
+    def sendto_(self, data):
+        if self.last_addr == 4:
+            Peer.sock4.sendto(data, (self.ipv4.compressed, 4646))
+        elif self.last_addr == 6:
+            Peer.sock6.sendto(data, (self.ipv6.compressed, 4646))
+
+    def be_online(self):
+        pass
+
+    def be_offline(self):
+        pass
+
+    def updated(self):
+        q.put((peerdict.etab.set_update,
+               lambda x:Peer.syncth.create_task(self, m=5, musts=x),
+               self.did))
 
 
 class LocalPeer(Peer):
@@ -157,6 +178,7 @@ class PeerDict(threading.Thread):
         self.d6 = {}
         self.d4 = {}
         self.lst = []
+        self.did = {}
         self.local = None
 
     def find_v4(self, addr):
@@ -180,6 +202,7 @@ class PeerDict(threading.Thread):
         if peer.ipv4:
             self.d4[peer.ipv4] = peer
         bisect.insort(self.lst, peer)
+        self.did[peer.did] = peer
 
     def load_db(self):
         res = self.htab.get_conds_execute(
@@ -206,11 +229,14 @@ class PeerDict(threading.Thread):
         # sqlite只支持单线程操作,所以把所有sqlite操作都放到这里
         conn = sqlite3.connect(conf.db_path)
         self.htab = HostTable(conn)
+        self.etab = ExchangeTable(conn)
         self.load_db()
         # TODO: 加载完成后同步hosts
         while True:
             p = q.get()
-            getattr(self.htab, p[0])(*p[1:])
+            res = p[0](*p[2:])
+            if callable(p[1]):
+                p[1](res)
 
 
 peerdict = PeerDict()
